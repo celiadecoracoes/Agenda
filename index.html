@@ -249,7 +249,7 @@ main#view{flex:1;min-width:0;padding:16px 16px calc(96px + var(--safe-b));max-wi
 .field-row .field{flex:1}
 .field-hint{font-size:11.5px;color:var(--text-faint);margin-top:4px}
 .input-with-actions{display:flex;gap:8px;align-items:center}
-.input-with-actions input{flex:1}
+.input-with-actions input,.input-with-actions select{flex:1}
 .round-action{width:44px;height:44px;border-radius:12px;border:none;display:flex;align-items:center;justify-content:center;flex:0 0 auto;cursor:pointer;color:var(--white)}
 .round-action svg{width:20px;height:20px}
 .ra-whats{background:#25D366}
@@ -264,13 +264,34 @@ main#view{flex:1;min-width:0;padding:16px 16px calc(96px + var(--safe-b));max-wi
 .divider{height:1px;background:var(--line);margin:14px 0}
 
 /* selected item chips in pedido form */
-.sel-item{display:flex;align-items:center;gap:10px;background:#FFF3F8;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.sel-item{display:flex;flex-direction:column;gap:8px;background:#FFF3F8;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.sel-item .si-top{display:flex;align-items:center;gap:10px}
 .sel-item .nm{flex:1;font-weight:700;font-size:13.5px}
+.sel-item .si-bottom{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .sel-item .qty{display:flex;align-items:center;gap:6px}
 .qty-btn{width:28px;height:28px;border-radius:8px;border:1.5px solid var(--line);background:var(--white);cursor:pointer;font-weight:800;color:var(--pink-dark);display:flex;align-items:center;justify-content:center}
-.sel-item .price{font-weight:800;font-size:13px;min-width:70px;text-align:right}
-.sel-item .rm{color:var(--danger);cursor:pointer}
+.sel-item .disc{display:flex;align-items:center;gap:6px}
+.sel-item .disc label{font-size:10.5px;font-weight:800;color:var(--text-soft);white-space:nowrap}
+.disc-input{width:66px;padding:6px 7px;border:1.5px solid var(--line);border-radius:8px;font-size:12.5px;text-align:right;background:var(--white);color:var(--text)}
+.disc-input:focus{outline:none;border-color:var(--pink)}
+.sel-item .price{font-weight:800;font-size:13px;min-width:70px;text-align:right;margin-left:auto}
+.sel-item .rm{color:var(--danger);cursor:pointer;flex:0 0 auto}
 .sel-item .rm svg{width:18px;height:18px}
+
+/* Empresas terceirizadas */
+.terc-item{background:#FFF3F8;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px}
+.terc-item .tc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.terc-item .tc-top .nm{font-weight:800;font-size:14px;color:var(--text)}
+.terc-item .tc-actions{display:flex;gap:12px;flex:0 0 auto}
+.terc-item .tc-actions span{cursor:pointer;display:flex}
+.terc-item .tc-actions svg{width:17px;height:17px}
+.terc-item .tc-actions .tc-edit{color:var(--pink-dark)}
+.terc-item .tc-actions .tc-rm{color:var(--danger)}
+.terc-item .tc-desc{font-size:12.5px;color:var(--text-soft);margin-top:3px;line-height:1.4}
+.terc-item .tc-meta{display:flex;justify-content:space-between;align-items:center;margin-top:9px;padding-top:9px;border-top:1px dashed var(--line);font-size:13px}
+.terc-item .tc-meta .qv{color:var(--text-soft);font-weight:700}
+.terc-item .tc-meta .tot{font-weight:800;color:var(--pink-dark);font-size:14px}
+.terc-item .tc-obs{font-size:12px;color:var(--text-faint);margin-top:6px;font-style:italic}
 
 .total-box{background:var(--black);border-radius:var(--radius);padding:18px;color:var(--white);margin-top:6px}
 .total-box .row{display:flex;justify-content:space-between;font-size:13.5px;color:#D7C3CD;padding:4px 0}
@@ -431,7 +452,8 @@ const ICONS = {
   filter:'<path d="M4 5h16l-6 7.5V19l-4 2v-8.5z"/>',
   eye:'<path d="M2 12s3.8-7 10-7 10 7 10 7-3.8 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
   lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/>',
-  logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>'
+  logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>',
+  truck:'<path d="M2.5 7h11v9h-11z"/><path d="M13.5 10.5h3.6L20 13.4V16h-6.5z"/><circle cx="6.5" cy="17.5" r="1.7"/><circle cx="16.5" cy="17.5" r="1.7"/>'
 };
 function ic(name,size){return '<svg viewBox="0 0 24 24" width="'+(size||24)+'" height="'+(size||24)+'" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+(ICONS[name]||'')+'</svg>';}
 
@@ -515,11 +537,12 @@ function findCliente(id){ return DB.clientes.find(c=>c.id===id); }
 function findProduto(id){ return DB.produtos.find(p=>p.id===id); }
 function findServico(id){ return DB.servicos.find(s=>s.id===id); }
 function pedidoTotal(p){
-  let t=0;
-  (p.produtos||[]).forEach(i=>{ const pr=findProduto(i.id); if(pr) t+=pr.preco*i.qtd; });
-  (p.servicos||[]).forEach(i=>{ const sv=findServico(i.id); if(sv) t+=sv.preco*i.qtd; });
-  t = t - (Number(p.desconto)||0);
-  return Math.max(t,0);
+  let bruto=0, descontoItens=0;
+  (p.produtos||[]).forEach(i=>{ const pr=findProduto(i.id); if(pr){ const b=pr.preco*i.qtd; const d=Math.min(Number(i.desconto)||0,b); bruto+=b; descontoItens+=d; } });
+  (p.servicos||[]).forEach(i=>{ const sv=findServico(i.id); if(sv){ const b=sv.preco*i.qtd; const d=Math.min(Number(i.desconto)||0,b); bruto+=b; descontoItens+=d; } });
+  (p.terceirizados||[]).forEach(t=>{ bruto += (Number(t.qtd)||0)*(Number(t.valor)||0); });
+  const total = (bruto - descontoItens) - (Number(p.desconto)||0);
+  return Math.max(total,0);
 }
 function statusLabel(s){
   return {pendente:'Pendente',aprovacao:'Aguardando aprovação',andamento:'Em andamento',pagamento:'Aguardando pagamento',finalizado:'Finalizado',cancelado:'Cancelado'}[s]||s;
@@ -557,7 +580,7 @@ function openModal(opts){
     '</div>';
   root.appendChild(overlay);
   overlay.addEventListener('click', e=>{ if(e.target===overlay) closeModal(overlay); });
-  overlay.querySelector('[data-close]').addEventListener('click', ()=>closeModal(overlay));
+  overlay.querySelectorAll('[data-close]').forEach(btn=>btn.addEventListener('click', ()=>closeModal(overlay)));
   modalStack.push(overlay);
   if(opts.onMount) opts.onMount(overlay);
   return overlay;
@@ -923,6 +946,14 @@ const PEDIDO_TABS = [
   {id:'pagamento', label:'Aguard. pagamento'},
   {id:'finalizado', label:'Finalizado'}
 ];
+const TIPOS_EVENTO = ['','Aniversário Infantil','Aniversário Adulto','Casamento','Noivado','Chá de Bebê / Revelação','Formatura','Corporativo','Outro'];
+function eventoResumo(p){
+  const ev = p.evento; if(!ev) return '';
+  const partes = [];
+  if(ev.tema) partes.push(ev.tema);
+  if(ev.nome) partes.push(ev.nome + (ev.idade? (' ('+ev.idade+' anos)') : ''));
+  return partes.join(' · ');
+}
 function viewPedidos(){
   let list = DB.pedidos.slice().sort((a,b)=> b.data.localeCompare(a.data) || b.numero-a.numero);
   if(state.pedidosTab!=='recentes'){ list = list.filter(p=>p.status===state.pedidosTab); }
@@ -938,10 +969,14 @@ function viewPedidos(){
 function pedidoRow(p){
   const cli = findCliente(p.clienteId);
   const total = pedidoTotal(p);
+  const resumo = eventoResumo(p);
   return '<div class="list-item" data-pedido-id="'+p.id+'">'+
     '<div class="bar" style="background:'+statusColor(p.status)+'"></div>'+
     '<div class="ico">'+ic('tag',18)+'</div>'+
-    '<div class="body"><div class="t1">Pedido #'+String(p.numero).padStart(5,'0')+' · '+escapeHtml(cli?cli.nome:'Cliente não definido')+'</div><div class="t2">'+fmtDateBR(p.data)+'</div></div>'+
+    '<div class="body"><div class="t1">Pedido #'+String(p.numero).padStart(5,'0')+' · '+escapeHtml(cli?cli.nome:'Cliente não definido')+'</div>'+
+      '<div class="t2">'+fmtDateBR(p.data)+(p.horario?(' às '+p.horario):'')+'</div>'+
+      (resumo? '<div class="t2">🎈 '+escapeHtml(resumo)+'</div>' : '')+
+    '</div>'+
     '<div class="end"><div class="price">'+fmtMoney(total)+'</div><span class="badge '+statusClass(p.status)+'" style="margin-top:4px">'+statusLabel(p.status)+'</span></div>'+
   '</div>';
 }
@@ -957,8 +992,16 @@ function viewPedidoForm(id){
   ensurePedidoSeq();
   const draft = p? JSON.parse(JSON.stringify(p)) : {
     id:null, numero: DB.pedidoSeq /* prévia; número definitivo é reservado ao salvar */,
-    data: todayISO(), clienteId:null, produtos:[], servicos:[], desconto:0, pagamento:'', obs:'', garantia:'', status:'pendente'
+    data: todayISO(), horario:'', clienteId:null, produtos:[], servicos:[], terceirizados:[],
+    evento:{tema:'',nome:'',idade:'',tipo:'',tipoOutro:'',horario:''},
+    desconto:0, pagamento:'', obs:'', garantia:'', status:'pendente'
   };
+  /* compatibilidade com pedidos salvos antes destes recursos */
+  draft.terceirizados = draft.terceirizados || [];
+  draft.horario = draft.horario || '';
+  draft.evento = Object.assign({tema:'',nome:'',idade:'',tipo:'',tipoOutro:'',horario:''}, draft.evento||{});
+  draft.produtos.forEach(i=>{ if(i.desconto==null) i.desconto = 0; });
+  draft.servicos.forEach(i=>{ if(i.desconto==null) i.desconto = 0; });
   window.__pedidoDraft = draft;
 
   const clientesOpts = '<option value="">Selecione o cliente</option>' + DB.clientes.map(c=>'<option value="'+c.id+'"'+(draft.clienteId===c.id?' selected':'')+'>'+escapeHtml(c.nome)+'</option>').join('');
@@ -970,11 +1013,31 @@ function viewPedidoForm(id){
   '<div class="two-col">'+
   '<div>'+
     '<div class="card">'+
-      '<div class="field"><label>Data</label><input type="date" id="pf-data" value="'+draft.data+'"></div>'+
-      '<div class="field"><label>Cliente</label><select id="pf-cliente">'+clientesOpts+'</select></div>'+
+      '<div class="field-row">'+
+        '<div class="field"><label>Data</label><input type="date" id="pf-data" value="'+draft.data+'"></div>'+
+        '<div class="field"><label>Horário</label><input type="time" id="pf-horario" value="'+escapeHtml(draft.horario)+'"></div>'+
+      '</div>'+
+      '<div class="field"><label>Cliente</label><div class="input-with-actions">'+
+        '<select id="pf-cliente">'+clientesOpts+'</select>'+
+        '<button type="button" class="round-action" style="background:var(--pink-dark)" id="pf-novo-cliente" title="Cadastrar novo cliente">'+ic('plus',20)+'</button>'+
+      '</div></div>'+
       '<div class="field"><label>Status</label><select id="pf-status">'+
         Object.keys({pendente:1,aprovacao:1,andamento:1,pagamento:1,finalizado:1,cancelado:1}).map(s=>'<option value="'+s+'"'+(draft.status===s?' selected':'')+'>'+statusLabel(s)+'</option>').join('')+
       '</select></div>'+
+    '</div>'+
+
+    '<div class="section-title">'+ic('calendar',16)+' Dados do Evento</div>'+
+    '<div class="card">'+
+      '<div class="field"><label>Tema</label><input type="text" id="pf-ev-tema" value="'+escapeHtml(draft.evento.tema)+'" placeholder="Ex: Super Herói, Safári, Princesas..."></div>'+
+      '<div class="field-row">'+
+        '<div class="field"><label>Nome</label><input type="text" id="pf-ev-nome" value="'+escapeHtml(draft.evento.nome)+'" placeholder="Nome do aniversariante/homenageado"></div>'+
+        '<div class="field" style="max-width:100px"><label>Idade</label><input type="number" min="0" step="1" id="pf-ev-idade" value="'+escapeHtml(String(draft.evento.idade||''))+'" placeholder="Anos"></div>'+
+      '</div>'+
+      '<div class="field"><label>Tipo de Evento</label><select id="pf-ev-tipo">'+
+        TIPOS_EVENTO.map(o=>'<option value="'+escapeHtml(o)+'"'+(draft.evento.tipo===o?' selected':'')+'>'+(o||'Selecione')+'</option>').join('')+
+      '</select></div>'+
+      '<div class="field" id="pf-ev-tipo-outro-wrap" style="'+(draft.evento.tipo==='Outro'?'':'display:none')+'"><label>Especifique o tipo de evento</label><input type="text" id="pf-ev-tipo-outro" value="'+escapeHtml(draft.evento.tipoOutro)+'" placeholder="Digite o tipo de evento"></div>'+
+      '<div class="field"><label>Horário do Evento</label><input type="time" id="pf-ev-horario" value="'+escapeHtml(draft.evento.horario)+'"></div>'+
     '</div>'+
 
     '<div class="section-title">'+ic('box',16)+' Produtos (aluguel)</div>'+
@@ -985,9 +1048,14 @@ function viewPedidoForm(id){
     '<div class="card"><div id="pf-servicos-list"></div>'+
       '<button class="btn btn-ghost btn-block mt-8" id="pf-add-servico">'+ic('plus',16)+' Adicionar serviço</button></div>'+
 
+    '<div class="section-title">'+ic('truck',16)+' Empresas Terceirizadas</div>'+
+    '<div class="card"><div id="pf-terceirizados-list"></div>'+
+      '<button class="btn btn-ghost btn-block mt-8" id="pf-add-terceirizado">'+ic('plus',16)+' Adicionar empresa terceirizada</button></div>'+
+
     '<div class="section-title">'+ic('settings',16)+' Detalhes finais</div>'+
     '<div class="card">'+
-      '<div class="field"><label>Desconto (R$)</label><input type="number" min="0" step="0.01" id="pf-desconto" value="'+(draft.desconto||0)+'"></div>'+
+      '<div class="field"><label>Desconto Geral (R$)</label><input type="number" min="0" step="0.01" id="pf-desconto" value="'+(draft.desconto||0)+'"></div>'+
+      '<div class="field-hint" style="margin:-8px 0 14px">Aplicado sobre o total, além do desconto que você pode dar em cada produto/serviço individualmente.</div>'+
       '<div class="field"><label>Forma de pagamento</label><select id="pf-pagamento">'+
         ['','Pix','Dinheiro','Cartão de Crédito','Cartão de Débito','Transferência','A combinar'].map(o=>'<option value="'+o+'"'+(draft.pagamento===o?' selected':'')+'>'+(o||'Não informado')+'</option>').join('')+
       '</select></div>'+
@@ -1003,41 +1071,65 @@ function viewPedidoForm(id){
   '</div>'+
   '</div>';
 }
+function selItemRow(group, i, item){
+  const bruto = item.preco*i.qtd;
+  const desc = Math.min(Number(i.desconto)||0, bruto);
+  return '<div class="sel-item">'+
+    '<div class="si-top"><span class="nm">'+escapeHtml(item.nome)+'</span><span class="rm" data-rm="'+group+':'+i.id+'">'+ic('trash',16)+'</span></div>'+
+    '<div class="si-bottom">'+
+      '<span class="qty"><button class="qty-btn" data-qm="'+group+':'+i.id+'">−</button><b>'+i.qtd+'</b><button class="qty-btn" data-qp="'+group+':'+i.id+'">+</button></span>'+
+      '<span class="disc"><label>Desc. R$</label><input type="number" min="0" step="0.01" class="disc-input" data-disc="'+group+':'+i.id+'" value="'+desc+'"></span>'+
+      '<span class="price">'+fmtMoney(Math.max(bruto-desc,0))+'</span>'+
+    '</div>'+
+  '</div>';
+}
 function renderPedidoItens(){
   const d = window.__pedidoDraft;
   const pWrap = document.getElementById('pf-produtos-list');
   const sWrap = document.getElementById('pf-servicos-list');
+  const tWrap = document.getElementById('pf-terceirizados-list');
   if(pWrap){
     pWrap.innerHTML = d.produtos.length? d.produtos.map(i=>{
       const pr = findProduto(i.id); if(!pr) return '';
-      return '<div class="sel-item"><span class="nm">'+escapeHtml(pr.nome)+'</span>'+
-        '<span class="qty"><button class="qty-btn" data-qm="produtos:'+i.id+'">−</button><b>'+i.qtd+'</b><button class="qty-btn" data-qp="produtos:'+i.id+'">+</button></span>'+
-        '<span class="price">'+fmtMoney(pr.preco*i.qtd)+'</span><span class="rm" data-rm="produtos:'+i.id+'">'+ic('trash',16)+'</span></div>';
+      return selItemRow('produtos', i, pr);
     }).join('') : '<p class="muted" style="font-size:13px">Nenhum produto adicionado.</p>';
   }
   if(sWrap){
     sWrap.innerHTML = d.servicos.length? d.servicos.map(i=>{
       const sv = findServico(i.id); if(!sv) return '';
-      return '<div class="sel-item"><span class="nm">'+escapeHtml(sv.nome)+'</span>'+
-        '<span class="qty"><button class="qty-btn" data-qm="servicos:'+i.id+'">−</button><b>'+i.qtd+'</b><button class="qty-btn" data-qp="servicos:'+i.id+'">+</button></span>'+
-        '<span class="price">'+fmtMoney(sv.preco*i.qtd)+'</span><span class="rm" data-rm="servicos:'+i.id+'">'+ic('trash',16)+'</span></div>';
+      return selItemRow('servicos', i, sv);
     }).join('') : '<p class="muted" style="font-size:13px">Nenhum serviço adicionado.</p>';
+  }
+  if(tWrap){
+    tWrap.innerHTML = d.terceirizados.length? d.terceirizados.map((t,idx)=>{
+      const total = (Number(t.qtd)||0)*(Number(t.valor)||0);
+      return '<div class="terc-item">'+
+        '<div class="tc-top"><span class="nm">'+escapeHtml(t.empresa)+'</span>'+
+          '<span class="tc-actions"><span class="tc-edit" data-tc-edit="'+idx+'">'+ic('edit',17)+'</span><span class="tc-rm" data-tc-rm="'+idx+'">'+ic('trash',17)+'</span></span></div>'+
+        '<div class="tc-desc">'+escapeHtml(t.item)+'</div>'+
+        '<div class="tc-meta"><span class="qv">'+t.qtd+' x '+fmtMoney(t.valor)+'</span><span class="tot">'+fmtMoney(total)+'</span></div>'+
+        (t.obs? '<div class="tc-obs">Obs: '+escapeHtml(t.obs)+'</div>' : '')+
+      '</div>';
+    }).join('') : '<p class="muted" style="font-size:13px">Nenhuma empresa terceirizada adicionada.</p>';
   }
   renderPedidoTotal();
   bindPedidoItemActions();
 }
 function renderPedidoTotal(){
   const d = window.__pedidoDraft;
-  const desconto = Number(document.getElementById('pf-desconto') ? document.getElementById('pf-desconto').value : d.desconto) || 0;
-  d.desconto = desconto;
-  let subtotal = 0;
-  d.produtos.forEach(i=>{ const pr=findProduto(i.id); if(pr) subtotal += pr.preco*i.qtd; });
-  d.servicos.forEach(i=>{ const sv=findServico(i.id); if(sv) subtotal += sv.preco*i.qtd; });
-  const total = Math.max(subtotal-desconto,0);
+  const descontoGeral = Number(document.getElementById('pf-desconto') ? document.getElementById('pf-desconto').value : d.desconto) || 0;
+  d.desconto = descontoGeral;
+  let bruto = 0, descontoItens = 0;
+  d.produtos.forEach(i=>{ const pr=findProduto(i.id); if(pr){ const b=pr.preco*i.qtd; bruto+=b; descontoItens+=Math.min(Number(i.desconto)||0,b); } });
+  d.servicos.forEach(i=>{ const sv=findServico(i.id); if(sv){ const b=sv.preco*i.qtd; bruto+=b; descontoItens+=Math.min(Number(i.desconto)||0,b); } });
+  (d.terceirizados||[]).forEach(t=>{ bruto += (Number(t.qtd)||0)*(Number(t.valor)||0); });
+  const subtotal = bruto - descontoItens;
+  const total = Math.max(subtotal-descontoGeral,0);
   const wrap = document.getElementById('pf-total-wrap');
   if(wrap) wrap.innerHTML = '<div class="total-box">'+
-    '<div class="row"><span>Subtotal</span><span>'+fmtMoney(subtotal)+'</span></div>'+
-    '<div class="row"><span>Desconto</span><span>- '+fmtMoney(desconto)+'</span></div>'+
+    '<div class="row"><span>Subtotal</span><span>'+fmtMoney(bruto)+'</span></div>'+
+    (descontoItens>0? '<div class="row"><span>Desconto nos itens</span><span>- '+fmtMoney(descontoItens)+'</span></div>' : '')+
+    '<div class="row"><span>Desconto geral</span><span>- '+fmtMoney(descontoGeral)+'</span></div>'+
     '<div class="row grand"><span>Total</span><span>'+fmtMoney(total)+'</span></div>'+
   '</div>';
 }
@@ -1045,6 +1137,13 @@ function bindPedidoItemActions(){
   document.querySelectorAll('[data-qp]').forEach(el=>el.addEventListener('click',()=>{ changeQty(el.dataset.qp,1); }));
   document.querySelectorAll('[data-qm]').forEach(el=>el.addEventListener('click',()=>{ changeQty(el.dataset.qm,-1); }));
   document.querySelectorAll('[data-rm]').forEach(el=>el.addEventListener('click',()=>{ removeItem(el.dataset.rm); }));
+  document.querySelectorAll('[data-disc]').forEach(el=>el.addEventListener('input',()=>{ changeDiscount(el.dataset.disc, el.value, el); }));
+  document.querySelectorAll('[data-tc-edit]').forEach(el=>el.addEventListener('click',()=>{ openTerceirizadoModal(Number(el.dataset.tcEdit)); }));
+  document.querySelectorAll('[data-tc-rm]').forEach(el=>el.addEventListener('click',async ()=>{
+    const idx = Number(el.dataset.tcRm);
+    const ok = await confirmDialog('Remover esta empresa terceirizada do pedido?');
+    if(ok){ window.__pedidoDraft.terceirizados.splice(idx,1); renderPedidoItens(); toast('Empresa removida','ok'); }
+  }));
 }
 function changeQty(key,delta){
   const [group,id] = key.split(':');
@@ -1052,11 +1151,29 @@ function changeQty(key,delta){
   const item = d[group].find(i=>i.id===id);
   if(item){ item.qtd = Math.max(1,item.qtd+delta); renderPedidoItens(); }
 }
+function changeDiscount(key,value,el){
+  const [group,id] = key.split(':');
+  const d = window.__pedidoDraft;
+  const item = d[group].find(i=>i.id===id);
+  if(!item) return;
+  const catalogItem = group==='produtos'? findProduto(id) : findServico(id);
+  if(!catalogItem) return;
+  const bruto = catalogItem.preco*item.qtd;
+  item.desconto = Math.max(0, Math.min(Number(value)||0, bruto));
+  const priceEl = el && el.closest('.sel-item') ? el.closest('.sel-item').querySelector('.price') : null;
+  if(priceEl) priceEl.textContent = fmtMoney(Math.max(bruto-item.desconto,0));
+  renderPedidoTotal();
+}
 function removeItem(key){
   const [group,id] = key.split(':');
   const d = window.__pedidoDraft;
   d[group] = d[group].filter(i=>i.id!==id);
   renderPedidoItens();
+}
+function refreshPedidoClienteSelect(selectedId){
+  const sel = document.getElementById('pf-cliente');
+  if(!sel) return;
+  sel.innerHTML = '<option value="">Selecione o cliente</option>' + DB.clientes.map(c=>'<option value="'+c.id+'"'+(selectedId===c.id?' selected':'')+'>'+escapeHtml(c.nome)+'</option>').join('');
 }
 function bindPedidoForm(id){
   document.querySelector('[data-back]').addEventListener('click',()=>navigate('pedidos'));
@@ -1064,15 +1181,34 @@ function bindPedidoForm(id){
   document.getElementById('pf-desconto').addEventListener('input', renderPedidoTotal);
   document.getElementById('pf-add-produto').addEventListener('click', ()=>openPickerModal('produtos'));
   document.getElementById('pf-add-servico').addEventListener('click', ()=>openPickerModal('servicos'));
+  document.getElementById('pf-add-terceirizado').addEventListener('click', ()=>openTerceirizadoModal(null));
+  document.getElementById('pf-novo-cliente').addEventListener('click', ()=>{
+    openClienteFormModal(null, (novoCliente)=>{
+      window.__pedidoDraft.clienteId = novoCliente.id;
+      refreshPedidoClienteSelect(novoCliente.id);
+    });
+  });
+  document.getElementById('pf-ev-tipo').addEventListener('change', (e)=>{
+    document.getElementById('pf-ev-tipo-outro-wrap').style.display = e.target.value==='Outro' ? '' : 'none';
+  });
 
   document.getElementById('pf-save').addEventListener('click', async ()=>{
     const d = window.__pedidoDraft;
     const clienteId = document.getElementById('pf-cliente').value;
     if(!clienteId){ toast('Selecione um cliente','err'); return; }
-    if(d.produtos.length===0 && d.servicos.length===0){ toast('Adicione ao menos um produto ou serviço','err'); return; }
+    if(d.produtos.length===0 && d.servicos.length===0 && d.terceirizados.length===0){ toast('Adicione ao menos um produto, serviço ou empresa terceirizada','err'); return; }
     d.data = document.getElementById('pf-data').value;
+    d.horario = document.getElementById('pf-horario').value;
     d.clienteId = clienteId;
     d.status = document.getElementById('pf-status').value;
+    d.evento = {
+      tema: document.getElementById('pf-ev-tema').value.trim(),
+      nome: document.getElementById('pf-ev-nome').value.trim(),
+      idade: document.getElementById('pf-ev-idade').value.trim(),
+      tipo: document.getElementById('pf-ev-tipo').value,
+      tipoOutro: document.getElementById('pf-ev-tipo-outro').value.trim(),
+      horario: document.getElementById('pf-ev-horario').value
+    };
     d.desconto = Number(document.getElementById('pf-desconto').value)||0;
     d.pagamento = document.getElementById('pf-pagamento').value;
     d.obs = document.getElementById('pf-obs').value.trim();
@@ -1111,8 +1247,45 @@ function openPickerModal(group){
   });
   ov.querySelectorAll('[data-pick]').forEach(btn=>btn.addEventListener('click',()=>{
     const cid = btn.dataset.pick;
-    if(!d[group].some(i=>i.id===cid)){ d[group].push({id:cid, qtd:1}); btn.textContent='Adicionado'; btn.className='btn btn-sm btn-dark'; renderPedidoItens(); }
+    if(!d[group].some(i=>i.id===cid)){ d[group].push({id:cid, qtd:1, desconto:0}); btn.textContent='Adicionado'; btn.className='btn btn-sm btn-dark'; renderPedidoItens(); }
   }));
+}
+function openTerceirizadoModal(idx){
+  const d = window.__pedidoDraft;
+  const t = (idx!=null && idx>=0)? d.terceirizados[idx] : null;
+  const ov = openModal({
+    title: t? 'Editar empresa terceirizada' : 'Nova empresa terceirizada',
+    body:
+      '<div class="field"><label>Nome da empresa</label><input type="text" id="tc-empresa" value="'+escapeHtml(t?t.empresa:'')+'" placeholder="Ex: Buffet Doce Sabor"></div>'+
+      '<div class="field"><label>Itens ou serviços prestados</label><textarea id="tc-item" placeholder="Ex: Buffet completo para 50 convidados">'+escapeHtml(t?t.item:'')+'</textarea></div>'+
+      '<div class="field-row">'+
+        '<div class="field"><label>Quantidade</label><input type="number" min="1" step="1" id="tc-qtd" value="'+(t?t.qtd:1)+'"></div>'+
+        '<div class="field"><label>Valor (R$)</label><input type="number" min="0" step="0.01" id="tc-valor" value="'+(t?t.valor:0)+'"></div>'+
+      '</div>'+
+      '<div class="field"><label>Observação</label><textarea id="tc-obs" placeholder="Detalhes, horário de entrega, contato do responsável...">'+escapeHtml(t?t.obs:'')+'</textarea></div>',
+    foot: (t? '<button class="btn btn-danger" id="tc-del">'+ic('trash',16)+'</button>':'') +
+      '<button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-primary" id="tc-save">'+ic('check',16)+' Salvar</button>'
+  });
+  ov.querySelector('#tc-save').addEventListener('click', ()=>{
+    const empresa = document.getElementById('tc-empresa').value.trim();
+    const item = document.getElementById('tc-item').value.trim();
+    const qtd = Math.max(1, Number(document.getElementById('tc-qtd').value)||1);
+    const valor = Math.max(0, Number(document.getElementById('tc-valor').value)||0);
+    const obs = document.getElementById('tc-obs').value.trim();
+    if(!empresa){ toast('Informe o nome da empresa','err'); return; }
+    if(!item){ toast('Informe o(s) item(ns) ou serviço(s) prestado(s)','err'); return; }
+    if(t){ Object.assign(t, {empresa, item, qtd, valor, obs}); }
+    else { d.terceirizados.push({id:nextId(), empresa, item, qtd, valor, obs}); }
+    closeModal(ov);
+    renderPedidoItens();
+    toast('Empresa terceirizada salva','ok');
+  });
+  if(t){
+    ov.querySelector('#tc-del').addEventListener('click', async ()=>{
+      const ok = await confirmDialog('Remover esta empresa terceirizada do pedido?');
+      if(ok){ d.terceirizados = d.terceirizados.filter(x=>x.id!==t.id); closeModal(ov); renderPedidoItens(); toast('Empresa removida','ok'); }
+    });
+  }
 }
 
 /* ======================================================================
@@ -1140,7 +1313,7 @@ function bindClientes(){
   document.querySelectorAll('[data-cli-id]').forEach(el=>el.addEventListener('click',()=>openClienteFormModal(el.dataset.cliId)));
   document.getElementById('fab-cliente').addEventListener('click',()=>openClienteFormModal(null));
 }
-function openClienteFormModal(id){
+function openClienteFormModal(id, onSaved){
   const c = id? findCliente(id) : null;
   const pedidosDoCliente = c? DB.pedidos.filter(p=>p.clienteId===c.id) : [];
   const ov = openModal({
@@ -1168,12 +1341,15 @@ function openClienteFormModal(id){
     if(!nome){ toast('Informe o nome do cliente','err'); return; }
     const obj = { id: c?c.id:nextId(), nome, telefone:document.getElementById('cl-tel').value.trim(), email:document.getElementById('cl-email').value.trim(), endereco:document.getElementById('cl-end').value.trim(), info:document.getElementById('cl-info').value.trim() };
     if(c){ Object.assign(c,obj); } else { DB.clientes.push(obj); }
-    await dbSave(); closeModal(ov); renderView(); toast('Cliente salvo','ok');
+    await dbSave();
+    closeModal(ov);
+    toast('Cliente salvo','ok');
+    if(onSaved){ onSaved(obj); } else { renderView(); }
   });
   if(c){
     ov.querySelector('#cl-del').addEventListener('click', async ()=>{
       const ok = await confirmDialog('Excluir este cliente? Pedidos associados não serão apagados.');
-      if(ok){ DB.clientes = DB.clientes.filter(x=>x.id!==c.id); await dbSave(); closeModal(ov); renderView(); toast('Cliente excluído','ok'); }
+      if(ok){ DB.clientes = DB.clientes.filter(x=>x.id!==c.id); await dbSave(); closeModal(ov); toast('Cliente excluído','ok'); renderView(); }
     });
   }
 }
@@ -1414,10 +1590,20 @@ function viewDocumento(id){
   const cli = findCliente(p.clienteId);
   const cfg = DB.config;
   const itens = [];
-  (p.produtos||[]).forEach(i=>{ const pr=findProduto(i.id); if(pr) itens.push({nome:pr.nome, unit:pr.preco, unidade:pr.unidade, qtd:i.qtd, total:pr.preco*i.qtd}); });
-  (p.servicos||[]).forEach(i=>{ const sv=findServico(i.id); if(sv) itens.push({nome:sv.nome, unit:sv.preco, unidade:'pacote', qtd:i.qtd, total:sv.preco*i.qtd}); });
-  const subtotal = itens.reduce((s,i)=>s+i.total,0);
+  (p.produtos||[]).forEach(i=>{ const pr=findProduto(i.id); if(pr){ const b=pr.preco*i.qtd; const desc=Math.min(Number(i.desconto)||0,b); itens.push({nome:pr.nome, unit:pr.preco, unidade:pr.unidade, qtd:i.qtd, desconto:desc, total:b-desc}); } });
+  (p.servicos||[]).forEach(i=>{ const sv=findServico(i.id); if(sv){ const b=sv.preco*i.qtd; const desc=Math.min(Number(i.desconto)||0,b); itens.push({nome:sv.nome, unit:sv.preco, unidade:'pacote', qtd:i.qtd, desconto:desc, total:b-desc}); } });
+  (p.terceirizados||[]).forEach(t=>{ itens.push({nome:t.empresa+' — '+t.item, unit:t.valor, unidade:'', qtd:t.qtd, desconto:0, total:t.qtd*t.valor, obsItem:t.obs}); });
+  const descontoItensTotal = itens.reduce((s,i)=>s+i.desconto,0);
+  const subtotal = itens.reduce((s,i)=>s+i.total,0) + descontoItensTotal;
   const total = pedidoTotal(p);
+  const ev = p.evento || {};
+  const tipoLabel = ev.tipo==='Outro'? (ev.tipoOutro||'Outro') : ev.tipo;
+  const evPartes = [];
+  if(ev.tema) evPartes.push('Tema: '+ev.tema);
+  if(ev.nome) evPartes.push((ev.idade? (ev.nome+' ('+ev.idade+' anos)') : ev.nome));
+  if(tipoLabel) evPartes.push('Tipo: '+tipoLabel);
+  if(ev.horario) evPartes.push('Horário do evento: '+ev.horario);
+  const eventoLinha = evPartes.join(' · ');
   state.docModel = state.docModel || 'A';
 
   return ''+
@@ -1429,16 +1615,21 @@ function viewDocumento(id){
     '<div class="rhead">'+
       '<div class="co"><div style="width:44px;height:44px;flex:0 0 auto">'+(cfg.logo?('<img src="'+cfg.logo+'" style="width:100%;height:100%;border-radius:50%;object-fit:cover">'):LOGO_SVG)+'</div>'+
         '<div><b style="font-family:var(--font-display);font-size:15px">'+escapeHtml(cfg.nome)+'</b><small>'+escapeHtml(cfg.endereco||'')+(cfg.telefone?(' · '+escapeHtml(cfg.telefone)):'')+'</small></div></div>'+
-      '<div class="meta">Pedido nº<b>'+String(p.numero).padStart(5,'0')+'</b>Data<b>'+fmtDateBR(p.data)+'</b></div>'+
+      '<div class="meta">Pedido nº<b>'+String(p.numero).padStart(5,'0')+'</b>Data<b>'+fmtDateBR(p.data)+(p.horario?(' às '+p.horario):'')+'</b></div>'+
     '</div>'+
     '<div class="rbody">'+
       '<div class="cliente"><b>'+escapeHtml(cli?cli.nome:'Cliente não definido')+'</b>'+escapeHtml(cli?(cli.telefone||cli.email||''):'')+'</div>'+
+      (eventoLinha? '<div class="obs"><b>Evento:</b> '+escapeHtml(eventoLinha)+'</div>' : '')+
       '<table><thead><tr><th>Item</th><th>Valor Unit.</th><th>Qtd.</th><th>Total</th></tr></thead><tbody>'+
-        itens.map(i=>'<tr><td>'+escapeHtml(i.nome)+'</td><td>'+fmtMoney(i.unit)+'</td><td>'+i.qtd+' '+escapeHtml(i.unidade||'')+'</td><td>'+fmtMoney(i.total)+'</td></tr>').join('')+
+        itens.map(i=>'<tr><td>'+escapeHtml(i.nome)+
+          (i.obsItem?('<br><small style="color:var(--text-soft);font-weight:600">'+escapeHtml(i.obsItem)+'</small>'):'')+
+          (i.desconto>0?('<br><small style="color:var(--pink-dark);font-weight:700">Desconto: -'+fmtMoney(i.desconto)+'</small>'):'')+
+          '</td><td>'+fmtMoney(i.unit)+'</td><td>'+i.qtd+' '+escapeHtml(i.unidade||'')+'</td><td>'+fmtMoney(i.total)+'</td></tr>').join('')+
       '</tbody></table>'+
       '<div class="totals">'+
         '<div class="r"><span>Subtotal</span><span>'+fmtMoney(subtotal)+'</span></div>'+
-        '<div class="r"><span>Desconto</span><span>- '+fmtMoney(p.desconto||0)+'</span></div>'+
+        (descontoItensTotal>0? '<div class="r"><span>Desconto nos itens</span><span>- '+fmtMoney(descontoItensTotal)+'</span></div>' : '')+
+        '<div class="r"><span>Desconto geral</span><span>- '+fmtMoney(p.desconto||0)+'</span></div>'+
         '<div class="r grand"><span>Total</span><span>'+fmtMoney(total)+'</span></div>'+
       '</div>'+
       (p.obs? '<div class="obs"><b>Observações:</b> '+escapeHtml(p.obs)+'</div>':'')+
