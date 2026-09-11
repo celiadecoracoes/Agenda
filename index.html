@@ -284,6 +284,14 @@ main#view{flex:1;min-width:0;padding:16px 16px calc(96px + var(--safe-b));max-wi
 .sel-item .rm{color:var(--danger);cursor:pointer;flex:0 0 auto}
 .sel-item .rm svg{width:18px;height:18px}
 
+/* Endereço do evento nas prévias (Agenda/Home/Pedidos) + botão do Google Maps */
+.evt-endereco{display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap}
+.evt-endereco .addr-text{font-size:12px;color:var(--text-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;display:flex;align-items:center;gap:4px}
+.evt-endereco .addr-text svg{width:12px;height:12px;flex:0 0 auto;color:var(--pink-dark)}
+.maps-link{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:800;color:var(--pink-dark);background:#FFE3EE;padding:4px 10px;border-radius:999px;cursor:pointer;border:none;flex:0 0 auto;white-space:nowrap}
+.maps-link svg{width:12px;height:12px}
+.maps-link:active{transform:scale(.95)}
+
 /* Empresas terceirizadas */
 .terc-item{background:#FFF3F8;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px}
 .terc-item .tc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
@@ -466,7 +474,8 @@ const ICONS = {
   logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>',
   truck:'<path d="M2.5 7h11v9h-11z"/><path d="M13.5 10.5h3.6L20 13.4V16h-6.5z"/><circle cx="6.5" cy="17.5" r="1.7"/><circle cx="16.5" cy="17.5" r="1.7"/>',
   image:'<rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="m5 17 4.5-5 3.5 4 2.5-3L20.5 17.5"/>',
-  sync:'<path d="M4 12a8 8 0 0 1 13.9-5.4L20 8.5"/><path d="M20 4v4.5h-4.5"/><path d="M20 12a8 8 0 0 1-13.9 5.4L4 15.5"/><path d="M4 20v-4.5h4.5"/>'
+  sync:'<path d="M4 12a8 8 0 0 1 13.9-5.4L20 8.5"/><path d="M20 4v4.5h-4.5"/><path d="M20 12a8 8 0 0 1-13.9 5.4L4 15.5"/><path d="M4 20v-4.5h4.5"/>',
+  pin:'<path d="M12 21s7-6.7 7-11.8A7 7 0 0 0 5 9.2C5 14.3 12 21 12 21z"/><circle cx="12" cy="9.3" r="2.5"/>'
 };
 function ic(name,size){return '<svg viewBox="0 0 24 24" width="'+(size||24)+'" height="'+(size||24)+'" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+(ICONS[name]||'')+'</svg>';}
 
@@ -605,7 +614,7 @@ function defaultDB(){
     seq: 1,
     pedidoSeq: 1,
     config:{ nome:'Celia Decorações', endereco:'', telefone:'', email:'', logo:'' },
-    clientes:[], produtos:[], servicos:[], pedidos:[], agenda:[], despesas:[],
+    clientes:[], produtos:[], servicos:[], pedidos:[], agenda:[], despesas:[], empresasTerceirizadas:[],
     onboarded:false
   };
 }
@@ -705,6 +714,11 @@ function telLink(phone){ return 'tel:'+onlyDigits(phone); }
 function findCliente(id){ return DB.clientes.find(c=>c.id===id); }
 function findProduto(id){ return DB.produtos.find(p=>p.id===id); }
 function findServico(id){ return DB.servicos.find(s=>s.id===id); }
+function findEmpresaTerc(id){ return DB.empresasTerceirizadas.find(e=>e.id===id); }
+/* Gera um link do Google Maps que abre direto a busca pelo endereço
+   informado — funciona tanto no app do Google Maps (mobile) quanto no
+   navegador (desktop), sem precisar de chave de API. */
+function mapsLink(endereco){ return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(endereco||''); }
 function pedidoTotal(p){
   let bruto=0, descontoItens=0;
   (p.produtos||[]).forEach(i=>{ const pr=findProduto(i.id); if(pr){ const b=pr.preco*i.qtd; const d=Math.min(Number(i.desconto)||0,b); bruto+=b; descontoItens+=d; } });
@@ -807,6 +821,7 @@ const ROUTES = [
   {id:'pedidos', label:'Pedidos', icon:'tag'},
   {id:'clientes', label:'Clientes', icon:'users'},
   {id:'catalogo', label:'Estoque', icon:'box'},
+  {id:'empresas-terc', label:'Terceirizados', icon:'truck'},
   {id:'financeiro', label:'Financeiro', icon:'dollar'},
   {id:'config', label:'Config.', icon:'settings'}
 ];
@@ -822,7 +837,8 @@ let state = {
   finAba: 'empresa',
   catalogTab:'produtos',
   pedidosTab:'recentes',
-  clienteSearch:''
+  clienteSearch:'',
+  empresaTercSearch:''
 };
 
 function navigate(route, params){
@@ -874,6 +890,7 @@ function openMaisSheet(){
     title:'Mais opções',
     body:
       '<div class="row-link" data-go="catalogo"><span class="l">'+ic('box',20)+' Produtos &amp; Serviços</span><span class="r">'+ic('chevron',16)+'</span></div>'+
+      '<div class="row-link" data-go="empresas-terc"><span class="l">'+ic('truck',20)+' Empresas terceirizadas</span><span class="r">'+ic('chevron',16)+'</span></div>'+
       '<div class="row-link" data-go="financeiro"><span class="l">'+ic('dollar',20)+' Financeiro</span><span class="r">'+ic('chevron',16)+'</span></div>'+
       '<div class="row-link" data-go="config"><span class="l">'+ic('settings',20)+' Configurações</span><span class="r">'+ic('chevron',16)+'</span></div>'
   });
@@ -891,7 +908,9 @@ function renderView(){
     case 'pedido-form': el.innerHTML = viewPedidoForm(state.params.id); bindPedidoForm(state.params.id); break;
     case 'clientes': el.innerHTML = viewClientes(); bindClientes(); break;
     case 'catalogo': el.innerHTML = viewCatalogo(); bindCatalogo(); break;
+    case 'empresas-terc': el.innerHTML = viewEmpresasTerc(); bindEmpresasTerc(); break;
     case 'financeiro': el.innerHTML = viewFinanceiro(); bindFinanceiro(); break;
+    case 'empresa-terc-detalhes': el.innerHTML = viewEmpresaTercDetalhesFinanceiro(state.params.id); bindEmpresaTercDetalhesFinanceiro(state.params.id); break;
     case 'config': el.innerHTML = viewConfig(); bindConfig(); break;
     case 'documento': el.innerHTML = viewDocumento(state.params.id); bindDocumento(state.params.id); break;
     default: el.innerHTML = viewHome(); bindHome();
@@ -1016,6 +1035,8 @@ function agendaRowHtml(a){
     '<div class="ico">'+ic(pedido?'tag':'calendar',18)+'</div>'+
     '<div class="body"><div class="t1">'+agendaHoraLabel(a)+' · '+escapeHtml(a.titulo||'Compromisso')+'</div><div class="t2">'+(cli?escapeHtml(cli.nome):'Sem cliente vinculado')+'</div>'+
       (a.obs? '<div class="t2" style="color:var(--text-faint)">🎈 '+escapeHtml(a.obs)+'</div>' : '')+
+      (a.endereco? ('<div class="evt-endereco"><span class="addr-text">'+ic('pin',12)+' '+escapeHtml(a.endereco)+'</span>'+
+        '<button type="button" class="maps-link" data-maps-addr="'+escapeHtml(a.endereco)+'">'+ic('pin',12)+' Ver no mapa</button></div>') : '')+
     '</div>'+
     '<span class="badge '+statusClass(a.status)+'">'+statusLabel(a.status)+'</span>'+
   '</div>';
@@ -1038,6 +1059,7 @@ function pedidoResumoItens(p){
 function syncPedidoAgenda(p){
   const hora = p.horario || (p.evento && p.evento.horario) || '';
   const horaFim = (p.horarioModo==='intervalo' && p.horarioFim) ? p.horarioFim : '';
+  const endereco = (p.evento && p.evento.endereco) || '';
   const cli = findCliente(p.clienteId);
   const resumoEvento = eventoResumo(p);
   const titulo = resumoEvento || (cli? cli.nome : 'Compromisso');
@@ -1051,7 +1073,8 @@ function syncPedidoAgenda(p){
     horaFim,
     clienteId: p.clienteId,
     status: p.status,
-    obs: pedidoResumoItens(p)
+    obs: pedidoResumoItens(p),
+    endereco
   };
   if(ag){ Object.assign(ag, obj); } else { DB.agenda.push(obj); }
 }
@@ -1105,6 +1128,7 @@ function bindHome(){
     if(item && item.pedidoId){ navigate('pedido-form',{id:item.pedidoId}); }
     else { navigate('agenda'); setTimeout(()=>openAgendaFormModal(el.dataset.openAgenda),50); }
   }));
+  bindMapsLinks();
 }
 
 /* ======================================================================
@@ -1165,7 +1189,9 @@ function agendaFullRow(a){
       '<div class="t1">'+agendaHoraLabel(a)+' · '+escapeHtml(a.titulo||'Compromisso')+'</div>'+
       '<div class="t2">'+(cli?escapeHtml(cli.nome):(a.clienteTexto?escapeHtml(a.clienteTexto):'Sem cliente'))+'</div>'+
       (a.obs? '<div class="t2" style="color:var(--text-faint)">🎈 '+escapeHtml(a.obs)+'</div>' : '')+
-      (pedido? '<div class="t2" style="color:'+(restante>0.004?'var(--danger)':'var(--ok)')+';font-weight:700">'+(restante>0.004?('Falta '+fmtMoney(restante)):'Pago integralmente')+'</div>' : '')+
+      (a.endereco? ('<div class="evt-endereco"><span class="addr-text">'+ic('pin',12)+' '+escapeHtml(a.endereco)+'</span>'+
+        '<button type="button" class="maps-link" data-maps-addr="'+escapeHtml(a.endereco)+'">'+ic('pin',12)+' Ver no mapa</button></div>') : '')+
+      (pedido? '<div class="t2" style="color:'+(restante>0.004?'var(--danger)':'var(--ok)')+';font-weight:700">'+(restante>0.004?('Falta '+fmtMoney(restante)):'Valor Total Pago')+'</div>' : '')+
     '</div>'+
     (pedido?
       '<div class="end"><div class="price">'+fmtMoney(pedidoTotal(pedido))+'</div><span class="badge '+statusClass(a.status)+'" style="margin-top:4px">'+statusLabel(a.status)+'</span></div>' :
@@ -1182,6 +1208,17 @@ function bindAgenda(){
     else { openAgendaFormModal(el.dataset.agendaId); }
   }));
   document.getElementById('fab-agenda').addEventListener('click',()=>openNovoAgendaOuPedidoSheet());
+  bindMapsLinks();
+}
+/* Botões "Ver no mapa" das prévias de eventos: abrem o Google Maps já com
+   o endereço certo em uma nova aba, sem disparar a navegação do item
+   (cliente/pedido) em que o botão está encaixado. */
+function bindMapsLinks(){
+  document.querySelectorAll('[data-maps-addr]').forEach(el=>el.addEventListener('click',(e)=>{
+    e.stopPropagation();
+    const endereco = el.dataset.mapsAddr;
+    if(endereco) window.open(mapsLink(endereco), '_blank', 'noopener');
+  }));
 }
 /* Ao tocar em "+ Agenda", oferece as duas opções: manter o compromisso
    avulso de sempre, ou já criar direto um Novo Pedido (que continua se
@@ -1369,7 +1406,9 @@ function pedidoRow(p){
     '<div class="body"><div class="t1">Pedido #'+String(p.numero).padStart(5,'0')+' · '+escapeHtml(cli?cli.nome:'Cliente não definido')+'</div>'+
       '<div class="t2">'+fmtDateBR(p.data)+(horarioTxt?(' às '+horarioTxt):'')+'</div>'+
       (resumo? '<div class="t2">🎈 '+escapeHtml(resumo)+'</div>' : '')+
-      (restante>0.004? '<div class="t2" style="color:var(--danger);font-weight:700">Falta '+fmtMoney(restante)+'</div>' : '<div class="t2" style="color:var(--ok);font-weight:700">Pago integralmente</div>')+
+      (p.evento && p.evento.endereco? ('<div class="evt-endereco"><span class="addr-text">'+ic('pin',12)+' '+escapeHtml(p.evento.endereco)+'</span>'+
+        '<button type="button" class="maps-link" data-maps-addr="'+escapeHtml(p.evento.endereco)+'">'+ic('pin',12)+' Ver no mapa</button></div>') : '')+
+      (restante>0.004? '<div class="t2" style="color:var(--danger);font-weight:700">Falta '+fmtMoney(restante)+'</div>' : '<div class="t2" style="color:var(--ok);font-weight:700">Valor Total Pago</div>')+
     '</div>'+
     '<div class="end"><div class="price">'+fmtMoney(total)+'</div><span class="badge '+statusClass(p.status)+'" style="margin-top:4px">'+statusLabel(p.status)+'</span></div>'+
   '</div>';
@@ -1378,6 +1417,7 @@ function bindPedidos(){
   document.querySelectorAll('[data-ptab]').forEach(el=>el.addEventListener('click',()=>{ state.pedidosTab = el.dataset.ptab; renderView(); }));
   document.querySelectorAll('[data-pedido-id]').forEach(el=>el.addEventListener('click',()=>navigate('pedido-form',{id:el.dataset.pedidoId})));
   document.getElementById('fab-pedido').addEventListener('click',()=>navigate('pedido-form',{id:null}));
+  bindMapsLinks();
 }
 
 /* -------- Pedido Form -------- */
@@ -1387,7 +1427,7 @@ function viewPedidoForm(id){
   const draft = p? JSON.parse(JSON.stringify(p)) : {
     id:null, numero: DB.pedidoSeq /* prévia; número definitivo é reservado ao salvar */,
     data: todayISO(), horario:'', horarioModo:'unico', horarioFim:'', clienteId:null, produtos:[], servicos:[], terceirizados:[],
-    evento:{tema:'',nome:'',idade:'',tipo:'',tipoOutro:'',horario:'',imagemInspiracao:''},
+    evento:{tema:'',nome:'',idade:'',tipo:'',tipoOutro:'',horario:'',endereco:'',imagemInspiracao:''},
     desconto:0, pagamentos:[], obs:'', garantia:'', status:'pendente'
   };
   /* compatibilidade com pedidos salvos antes destes recursos */
@@ -1396,7 +1436,7 @@ function viewPedidoForm(id){
   draft.horarioModo = draft.horarioModo || 'unico';
   draft.horarioFim = draft.horarioFim || '';
   draft.pagamentos = draft.pagamentos || [];
-  draft.evento = Object.assign({tema:'',nome:'',idade:'',tipo:'',tipoOutro:'',horario:'',imagemInspiracao:''}, draft.evento||{});
+  draft.evento = Object.assign({tema:'',nome:'',idade:'',tipo:'',tipoOutro:'',horario:'',endereco:'',imagemInspiracao:''}, draft.evento||{});
   draft.produtos.forEach(i=>{ if(i.desconto==null) i.desconto = 0; });
   draft.servicos.forEach(i=>{ if(i.desconto==null) i.desconto = 0; });
   window.__pedidoDraft = draft;
@@ -1447,6 +1487,7 @@ function viewPedidoForm(id){
       '</select></div>'+
       '<div class="field" id="pf-ev-tipo-outro-wrap" style="'+(draft.evento.tipo==='Outro'?'':'display:none')+'"><label>Especifique o tipo de evento</label><input type="text" id="pf-ev-tipo-outro" value="'+escapeHtml(draft.evento.tipoOutro)+'" placeholder="Digite o tipo de evento"></div>'+
       '<div class="field"><label>Horário do Evento</label><input type="time" id="pf-ev-horario" value="'+escapeHtml(draft.evento.horario)+'"></div>'+
+      '<div class="field"><label>Endereço do Evento</label><input type="text" id="pf-ev-endereco" value="'+escapeHtml(draft.evento.endereco)+'" placeholder="Rua, número, bairro, cidade"></div>'+
     '</div>'+
 
     '<div class="section-title">'+ic('box',16)+' Produtos (aluguel)</div>'+
@@ -1561,7 +1602,7 @@ function renderPedidoPagamentos(){
   let sinal;
   if(total<=0){ sinal = '<span class="badge" style="background:#EFEFEF;color:#8A7583">Sem valor definido</span>'; }
   else if(pago<=0.004){ sinal = '<span class="badge cancelado">Pendente — nenhum valor pago</span>'; }
-  else if(restante<=0.004){ sinal = '<span class="badge finalizado">Pago integralmente</span>'; }
+  else if(restante<=0.004){ sinal = '<span class="badge finalizado">Valor Total Pago</span>'; }
   else{ sinal = '<span class="badge pagamento">Parcial — falta '+fmtMoney(restante)+'</span>'; }
 
   resumoWrap.innerHTML = '<div class="total-box" style="background:var(--bg)">'+
@@ -1768,6 +1809,7 @@ function bindPedidoForm(id){
       tipo: document.getElementById('pf-ev-tipo').value,
       tipoOutro: document.getElementById('pf-ev-tipo-outro').value.trim(),
       horario: document.getElementById('pf-ev-horario').value,
+      endereco: document.getElementById('pf-ev-endereco').value.trim(),
       imagemInspiracao: d.evento.imagemInspiracao || ''
     };
     d.desconto = Number(document.getElementById('pf-desconto').value)||0;
@@ -1818,7 +1860,10 @@ function openTerceirizadoModal(idx){
   const ov = openModal({
     title: t? 'Editar empresa terceirizada' : 'Nova empresa terceirizada',
     body:
-      '<div class="field"><label>Nome da empresa</label><input type="text" id="tc-empresa" value="'+escapeHtml(t?t.empresa:'')+'" placeholder="Ex: Buffet Doce Sabor"></div>'+
+      '<div class="field"><label>Empresa terceirizada</label><div class="input-with-actions">'+
+        '<select id="tc-empresa-select"></select>'+
+        '<button type="button" class="round-action" style="background:var(--pink-dark)" id="tc-novo-empresa" title="Cadastrar nova empresa">'+ic('plus',20)+'</button>'+
+      '</div></div>'+
       '<div class="field"><label>Itens ou serviços prestados</label><textarea id="tc-item" placeholder="Ex: Buffet completo para 50 convidados">'+escapeHtml(t?t.item:'')+'</textarea></div>'+
       '<div class="field-row">'+
         '<div class="field"><label>Quantidade</label><input type="number" min="1" step="1" id="tc-qtd" value="'+(t?t.qtd:1)+'"></div>'+
@@ -1828,16 +1873,33 @@ function openTerceirizadoModal(idx){
     foot: (t? '<button class="btn btn-danger" id="tc-del">'+ic('trash',16)+'</button>':'') +
       '<button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-primary" id="tc-save">'+ic('check',16)+' Salvar</button>'
   });
+
+  refreshTerceirizadoEmpresaSelect(t);
+
+  ov.querySelector('#tc-novo-empresa').addEventListener('click', ()=>{
+    openEmpresaTercFormModal(null, (novaEmpresa)=>{
+      refreshTerceirizadoEmpresaSelect(null, novaEmpresa.id);
+      const itemField = document.getElementById('tc-item');
+      if(itemField && !itemField.value.trim() && novaEmpresa.itens){ itemField.value = novaEmpresa.itens; }
+    });
+  });
+  ov.querySelector('#tc-empresa-select').addEventListener('change', (e)=>{
+    const emp = findEmpresaTerc(e.target.value);
+    const itemField = document.getElementById('tc-item');
+    if(emp && emp.itens && itemField && !itemField.value.trim()){ itemField.value = emp.itens; }
+  });
+
   ov.querySelector('#tc-save').addEventListener('click', ()=>{
-    const empresa = document.getElementById('tc-empresa').value.trim();
+    const empresaId = document.getElementById('tc-empresa-select').value;
+    const empresaObj = findEmpresaTerc(empresaId);
     const item = document.getElementById('tc-item').value.trim();
     const qtd = Math.max(1, Number(document.getElementById('tc-qtd').value)||1);
     const valor = Math.max(0, Number(document.getElementById('tc-valor').value)||0);
     const obs = document.getElementById('tc-obs').value.trim();
-    if(!empresa){ toast('Informe o nome da empresa','err'); return; }
+    if(!empresaObj){ toast('Selecione a empresa terceirizada (ou cadastre uma nova pelo botão +)','err'); return; }
     if(!item){ toast('Informe o(s) item(ns) ou serviço(s) prestado(s)','err'); return; }
-    if(t){ Object.assign(t, {empresa, item, qtd, valor, obs}); }
-    else { d.terceirizados.push({id:nextId(), empresa, item, qtd, valor, obs}); }
+    if(t){ Object.assign(t, {empresaId, empresa:empresaObj.nome, item, qtd, valor, obs}); }
+    else { d.terceirizados.push({id:nextId(), empresaId, empresa:empresaObj.nome, item, qtd, valor, obs}); }
     closeModal(ov);
     renderPedidoItens();
     toast('Empresa terceirizada salva','ok');
@@ -1848,6 +1910,21 @@ function openTerceirizadoModal(idx){
       if(ok){ d.terceirizados = d.terceirizados.filter(x=>x.id!==t.id); closeModal(ov); renderPedidoItens(); toast('Empresa removida','ok'); }
     });
   }
+}
+/* Preenche/atualiza o <select> de empresas terceirizadas cadastradas
+   dentro do modal de item do pedido. Pode ser chamada de novo após o
+   cadastro de uma nova empresa pelo atalho "+", sem fechar o modal. */
+function refreshTerceirizadoEmpresaSelect(t, forceSelectId){
+  const sel = document.getElementById('tc-empresa-select');
+  if(!sel) return;
+  const empresas = DB.empresasTerceirizadas.slice().sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR',{sensitivity:'base'}));
+  const legadoMatch = (t && !t.empresaId && t.empresa)? DB.empresasTerceirizadas.find(e=>e.nome===t.empresa) : null;
+  const selectedId = forceSelectId || (t? (t.empresaId || (legadoMatch?legadoMatch.id:'')) : '');
+  if(empresas.length===0){
+    sel.innerHTML = '<option value="">Nenhuma empresa cadastrada — use o botão ao lado</option>';
+    return;
+  }
+  sel.innerHTML = '<option value="">Selecione a empresa</option>' + empresas.map(e=>'<option value="'+e.id+'"'+(selectedId===e.id?' selected':'')+'>'+escapeHtml(e.nome)+'</option>').join('');
 }
 
 /* ======================================================================
@@ -1912,6 +1989,80 @@ function openClienteFormModal(id, onSaved){
     ov.querySelector('#cl-del').addEventListener('click', async ()=>{
       const ok = await confirmDialog('Excluir este cliente? Pedidos associados não serão apagados.');
       if(ok){ DB.clientes = DB.clientes.filter(x=>x.id!==c.id); await dbSave(); closeModal(ov); toast('Cliente excluído','ok'); renderView(); }
+    });
+  }
+}
+
+/* ======================================================================
+   EMPRESAS TERCEIRIZADAS
+   Cadastro central das empresas parceiras (buffet, som, decoração externa
+   etc.) usadas nos pedidos. Funciona no mesmo padrão da aba Cliente: uma
+   lista própria (acessível por "Mais opções" / menu lateral) e, dentro do
+   pedido, um seletor das empresas já cadastradas com atalho para cadastrar
+   uma nova sem sair do fluxo.
+   ====================================================================== */
+function viewEmpresasTerc(){
+  const q = (state.empresaTercSearch||'').toLowerCase();
+  const list = DB.empresasTerceirizadas.filter(e=> !q || e.nome.toLowerCase().includes(q) || (e.telefone||'').includes(q));
+  return ''+
+  '<div class="page-head"><div><h2>Empresas Terceirizadas</h2><p class="sub">'+DB.empresasTerceirizadas.length+' empresa(s) cadastrada(s)</p></div></div>'+
+  '<div class="search-bar">'+ic('search',18)+'<input type="text" id="et-search" placeholder="Buscar por nome ou telefone" value="'+escapeHtml(state.empresaTercSearch||'')+'"></div>'+
+  '<div>'+ (list.length? list.map(e=>empresaTercRow(e)).join('') :
+    '<div class="card"><div class="empty">'+ic('truck',44)+'<h4>Nenhuma empresa cadastrada</h4><p>Cadastre a primeira empresa terceirizada parceira do seu espaço.</p></div></div>')+'</div>'+
+  '<div class="fab"><button class="btn btn-primary" id="fab-empresa-terc">'+ic('plus',18)+' Empresa</button></div>';
+}
+function empresaTercRow(e){
+  return '<div class="list-item" data-et-id="'+e.id+'">'+
+    '<div class="ico" style="background:#FFF1D6;color:#A9760B">'+ic('truck',18)+'</div>'+
+    '<div class="body"><div class="t1">'+escapeHtml(e.nome)+'</div><div class="t2">'+escapeHtml(e.telefone||e.email||'Sem contato')+'</div>'+
+      (e.itens? '<div class="t2" style="color:var(--text-faint)">'+escapeHtml(e.itens)+'</div>' : '')+
+    '</div>'+
+    '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg>'+
+  '</div>';
+}
+function bindEmpresasTerc(){
+  document.getElementById('et-search').addEventListener('input', e=>{ state.empresaTercSearch = e.target.value; renderView(); document.getElementById('et-search').focus(); });
+  document.querySelectorAll('[data-et-id]').forEach(el=>el.addEventListener('click',()=>openEmpresaTercFormModal(el.dataset.etId)));
+  document.getElementById('fab-empresa-terc').addEventListener('click',()=>openEmpresaTercFormModal(null));
+}
+function openEmpresaTercFormModal(id, onSaved){
+  const e = id? findEmpresaTerc(id) : null;
+  const pedidosComEmpresa = e? DB.pedidos.filter(p=>(p.terceirizados||[]).some(t=>t.empresaId===e.id || t.empresa===e.nome)) : [];
+  const ov = openModal({
+    title: e? 'Editar empresa terceirizada' : 'Nova empresa terceirizada',
+    body:
+      '<div class="field"><label>Nome da empresa</label><input type="text" id="et-nome" value="'+escapeHtml(e?e.nome:'')+'" placeholder="Ex: Buffet Doce Sabor"></div>'+
+      '<div class="field"><label>Telefone</label><div class="input-with-actions">'+
+        '<input type="tel" id="et-tel" value="'+escapeHtml(e?e.telefone:'')+'" placeholder="(11) 99999-9999">'+
+        '<button type="button" class="round-action ra-whats" id="et-whats-btn" title="Abrir WhatsApp">'+ic('whats',20)+'</button>'+
+        '<button type="button" class="round-action ra-call" id="et-call-btn" title="Ligar">'+ic('call',20)+'</button>'+
+      '</div></div>'+
+      '<div class="field"><label>E-mail</label><input type="email" id="et-email" value="'+escapeHtml(e?e.email:'')+'" placeholder="email@exemplo.com"></div>'+
+      '<div class="field"><label>Endereço</label><input type="text" id="et-end" value="'+escapeHtml(e?e.endereco:'')+'" placeholder="Rua, número, bairro, cidade"></div>'+
+      '<div class="field"><label>Itens/serviços que costuma prestar</label><textarea id="et-itens" placeholder="Ex: Buffet completo, bolo, docinhos...">'+escapeHtml(e?e.itens:'')+'</textarea></div>'+
+      '<div class="field"><label>Observações / info. adicional</label><textarea id="et-info" placeholder="Contato do responsável, condições de pagamento...">'+escapeHtml(e?e.info:'')+'</textarea></div>'+
+      (e? ('<div class="divider"></div><div class="section-title" style="margin-top:0">'+ic('tag',15)+' Pedidos com esta empresa ('+pedidosComEmpresa.length+')</div>'+
+        (pedidosComEmpresa.length? pedidosComEmpresa.slice(0,4).map(p=>'<div class="row-link"><span class="l">Pedido #'+String(p.numero).padStart(5,'0')+'</span><span class="r badge '+statusClass(p.status)+'">'+statusLabel(p.status)+'</span></div>').join(''):'<p class="muted" style="font-size:13px">Nenhum pedido ainda.</p>')
+      ) : ''),
+    foot: (e? '<button class="btn btn-danger" id="et-del">'+ic('trash',16)+'</button>':'') +
+      '<button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-primary" id="et-save">'+ic('check',16)+' Salvar</button>'
+  });
+  ov.querySelector('#et-whats-btn').addEventListener('click',()=>{ const t=document.getElementById('et-tel').value; if(onlyDigits(t)) window.open(waLink(t,'Olá! Aqui é da Celia Decorações 🎈'),'_blank'); else toast('Informe um telefone','err'); });
+  ov.querySelector('#et-call-btn').addEventListener('click',()=>{ const t=document.getElementById('et-tel').value; if(onlyDigits(t)) window.location.href=telLink(t); else toast('Informe um telefone','err'); });
+  ov.querySelector('#et-save').addEventListener('click', async ()=>{
+    const nome = document.getElementById('et-nome').value.trim();
+    if(!nome){ toast('Informe o nome da empresa','err'); return; }
+    const obj = { id: e?e.id:nextId(), nome, telefone:document.getElementById('et-tel').value.trim(), email:document.getElementById('et-email').value.trim(), endereco:document.getElementById('et-end').value.trim(), itens:document.getElementById('et-itens').value.trim(), info:document.getElementById('et-info').value.trim() };
+    if(e){ Object.assign(e,obj); } else { DB.empresasTerceirizadas.push(obj); }
+    await dbSave();
+    closeModal(ov);
+    toast('Empresa terceirizada salva','ok');
+    if(onSaved){ onSaved(obj); } else { renderView(); }
+  });
+  if(e){
+    ov.querySelector('#et-del').addEventListener('click', async ()=>{
+      const ok = await confirmDialog('Excluir esta empresa terceirizada? Pedidos associados não serão apagados.');
+      if(ok){ DB.empresasTerceirizadas = DB.empresasTerceirizadas.filter(x=>x.id!==e.id); await dbSave(); closeModal(ov); toast('Empresa excluída','ok'); renderView(); }
     });
   }
 }
@@ -2076,18 +2227,65 @@ function finBreakdownProprio(pedidos){
   });
   return Object.entries(map).sort((a,b)=>b[1]-a[1]);
 }
-/* Total contratado por empresa terceirizada, somado entre todos os
-   pedidos do período. */
+/* Resolve a empresa terceirizada cadastrada correspondente a um item de
+   pedido: primeiro pelo vínculo direto (empresaId), com fallback por nome
+   para itens salvos antes deste vínculo existir. Retorna null quando a
+   empresa não está (ou não está mais) cadastrada. */
+function resolveEmpresaTercFromItem(t){
+  if(t.empresaId){ const e = findEmpresaTerc(t.empresaId); if(e) return e; }
+  if(t.empresa){ const e = DB.empresasTerceirizadas.find(x=>x.nome===t.empresa); if(e) return e; }
+  return null;
+}
+/* Total contratado por empresa terceirizada CADASTRADA, somado entre
+   todos os pedidos do período. Cada entrada carrega o id da empresa para
+   permitir navegar direto para a área de vendas daquela empresa. */
 function finBreakdownTerceirizadas(pedidos){
   const map = {};
   pedidos.forEach(p=>{
     (p.terceirizados||[]).forEach(t=>{
-      if(!t.empresa) return;
       const total = (Number(t.qtd)||0)*(Number(t.valor)||0);
-      map[t.empresa] = (map[t.empresa]||0) + total;
+      const emp = resolveEmpresaTercFromItem(t);
+      const key = emp? emp.id : ('_naocadastrada_'+(t.empresa||'Sem nome'));
+      if(!map[key]){ map[key] = {id: emp?emp.id:null, nome: emp?emp.nome:((t.empresa||'Sem nome')+' (não cadastrada)'), total:0, cadastrada: !!emp}; }
+      map[key].total += total;
     });
   });
-  return Object.entries(map).sort((a,b)=>b[1]-a[1]);
+  return Object.values(map).sort((a,b)=>b.total-a.total);
+}
+/* Todas as "vendas" (itens de pedido) de uma empresa terceirizada
+   cadastrada, em todos os pedidos já lançados — usado na área de detalhes
+   financeiros da empresa. */
+function empresaTercVendas(empresaId, empresaNome){
+  const vendas = [];
+  DB.pedidos.forEach(p=>{
+    (p.terceirizados||[]).forEach(t=>{
+      const emp = resolveEmpresaTercFromItem(t);
+      const match = emp? emp.id===empresaId : false;
+      if(match){ vendas.push({p, t, total:(Number(t.qtd)||0)*(Number(t.valor)||0)}); }
+    });
+  });
+  vendas.sort((a,b)=> (b.p.data||'').localeCompare(a.p.data||''));
+  return vendas;
+}
+/* O valor contratado com uma empresa terceirizada CADASTRADA é sempre
+   pago a ela na hora do evento — não fica no caixa da Celia Decorações.
+   Por isso, para todo item de "terceirizados" vinculado a uma empresa
+   cadastrada, geramos automaticamente uma "despesa" no Financeiro (na
+   data do evento), descontando esse valor do saldo do período. Empresas
+   ainda não cadastradas não geram despesa automática — apenas o cadastro
+   formal garante que o valor seja de fato repassado a um terceiro. */
+function terceirizadosCadastradosDespesa(pedidos){
+  const linhas = [];
+  pedidos.forEach(p=>{
+    (p.terceirizados||[]).forEach(t=>{
+      const emp = resolveEmpresaTercFromItem(t);
+      if(!emp) return;
+      const valor = (Number(t.qtd)||0)*(Number(t.valor)||0);
+      if(valor<=0) return;
+      linhas.push({p, t, empresa:emp, valor, data:p.data});
+    });
+  });
+  return linhas;
 }
 function viewFinanceiro(){
   const periodo = state.finPeriodo;
@@ -2114,8 +2312,18 @@ function viewFinanceiro(){
   const recebimentos = pagamentosPeriodo.reduce((s,x)=>s+(Number(x.pg.valor)||0),0);
 
   const despesasPeriodo = DB.despesas.filter(d=>d.data && d.data>=startIso && d.data<=endIso);
-  const totalDespesas = despesasPeriodo.reduce((s,d)=>s+Number(d.valor||0),0);
+  const totalDespesasManuais = despesasPeriodo.reduce((s,d)=>s+Number(d.valor||0),0);
+  /* Valores pagos a empresas terceirizadas CADASTRADAS entram como
+     despesa automática do período (dinheiro que sai na hora do evento). */
+  const despesasTercPeriodo = terceirizadosCadastradosDespesa(pedidosPeriodoAtivos);
+  const totalDespesasTerc = despesasTercPeriodo.reduce((s,x)=>s+x.valor,0);
+  const totalDespesas = totalDespesasManuais + totalDespesasTerc;
   const saldo = recebimentos - totalDespesas;
+  /* Lista combinada (manuais + terceirizados), mais recentes primeiro. */
+  const despesasCombinadas = [
+    ...despesasPeriodo.map(d=>({tipo:'manual', data:d.data, item:d})),
+    ...despesasTercPeriodo.map(x=>({tipo:'terceirizado', data:x.data, item:x}))
+  ].sort((a,b)=> (b.data||'').localeCompare(a.data||''));
 
   const aba = state.finAba;
   const breakdownProprio = aba==='empresa'? finBreakdownProprio(pedidosPeriodoAtivos) : [];
@@ -2154,16 +2362,28 @@ function viewFinanceiro(){
         '<div class="stat"><span class="lbl">'+escapeHtml(nome)+'</span><span class="val pink">'+fmtMoney(val)+'</span></div>'
       ).join('') : '<div class="empty" style="padding:12px 0">'+ic('box',36)+'<h4>Nenhum produto/serviço próprio no período</h4></div>')+
     '</div>' :
-    '<div class="card">'+
-      (breakdownTerc.length? breakdownTerc.map(([empresa,val])=>
-        '<div class="stat"><span class="lbl">'+escapeHtml(empresa)+'</span><span class="val pink">'+fmtMoney(val)+'</span></div>'
-      ).join('') : '<div class="empty" style="padding:12px 0">'+ic('truck',36)+'<h4>Nenhuma empresa terceirizada no período</h4></div>')+
-    '</div>')+
+    '<p class="muted" style="font-size:12.5px;margin:-6px 0 10px">Estes valores já são descontados do seu saldo — aparecem também como despesa mais abaixo.</p>'+
+    (breakdownTerc.length?
+      breakdownTerc.map(row=> row.id?
+        ('<div class="list-item" data-fin-empresa-id="'+row.id+'">'+
+          '<div class="ico" style="background:#FFF1D6;color:#A9760B">'+ic('truck',18)+'</div>'+
+          '<div class="body"><div class="t1">'+escapeHtml(row.nome)+'</div><div class="t2">Toque para ver todas as vendas</div></div>'+
+          '<div class="end"><div class="price">'+fmtMoney(row.total)+'</div></div>'+
+          '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg>'+
+        '</div>') :
+        ('<div class="list-item" style="cursor:default">'+
+          '<div class="ico" style="background:#F1E1E1;color:var(--text-faint)">'+ic('truck',18)+'</div>'+
+          '<div class="body"><div class="t1">'+escapeHtml(row.nome)+'</div><div class="t2" style="color:var(--text-faint)">Cadastre esta empresa para ver os detalhes</div></div>'+
+          '<div class="end"><div class="price">'+fmtMoney(row.total)+'</div></div>'+
+        '</div>')
+      ).join('') :
+      '<div class="card"><div class="empty" style="padding:12px 0">'+ic('truck',36)+'<h4>Nenhuma empresa terceirizada no período</h4></div></div>'))+
   '<div class="section-title">'+ic('dollar',16)+' Pagamentos recebidos no período</div>'+
   '<div>'+(pagamentosPeriodo.length? pagamentosPeriodo.map(x=>pagamentoRecebidoRow(x.pg,x.p)).join('') :
     '<div class="card"><div class="empty" style="padding:16px 0">'+ic('dollar',36)+'<h4>Nenhum pagamento recebido neste período</h4></div></div>')+'</div>'+
   '<div class="section-title">'+ic('wallet',16)+' Despesas do período</div>'+
-  '<div>'+(despesasPeriodo.length? despesasPeriodo.map(d=>despesaRow(d)).join('') :
+  '<p class="muted" style="font-size:12.5px;margin:-10px 0 12px">Inclui os valores pagos a empresas terceirizadas cadastradas nos pedidos deste período — esse dinheiro é repassado a elas na hora e não fica no seu caixa.</p>'+
+  '<div>'+(despesasCombinadas.length? despesasCombinadas.map(x=> x.tipo==='manual'? despesaRow(x.item) : empresaTercDespesaRow(x.item)).join('') :
     '<div class="card"><div class="empty" style="padding:16px 0">'+ic('wallet',36)+'<h4>Nenhuma despesa lançada</h4></div></div>')+'</div>'+
   '<div class="fab"><button class="btn btn-primary" id="fab-despesa">'+ic('plus',18)+' Despesa</button></div>';
 }
@@ -2183,6 +2403,21 @@ function despesaRow(d){
     '<div class="end"><div class="price" style="color:var(--danger)">- '+fmtMoney(d.valor)+'</div></div>'+
   '</div>';
 }
+/* Linha da lista de despesas para o valor pago a uma empresa terceirizada
+   cadastrada — gerada automaticamente a partir do item do pedido, não é
+   editável diretamente (edite o item terceirizado dentro do pedido, ou o
+   cadastro da empresa). Toca no pedido de origem. */
+function empresaTercDespesaRow(x){
+  const {p, t, empresa, valor} = x;
+  return '<div class="list-item" data-pedido-id="'+p.id+'">'+
+    '<div class="ico" style="background:#FBE7E7;color:var(--danger)">'+ic('truck',18)+'</div>'+
+    '<div class="body"><div class="t1">'+escapeHtml(empresa.nome)+' <small class="muted" style="font-weight:600">(terceirizado)</small></div>'+
+      '<div class="t2">'+fmtDateBR(p.data)+' · Pedido #'+String(p.numero).padStart(5,'0')+'</div>'+
+      (t.item? '<div class="t2" style="color:var(--text-faint)">'+escapeHtml(t.item)+'</div>' : '')+
+    '</div>'+
+    '<div class="end"><div class="price" style="color:var(--danger)">- '+fmtMoney(valor)+'</div></div>'+
+  '</div>';
+}
 function bindFinanceiro(){
   document.querySelectorAll('[data-finperiodo]').forEach(el=>el.addEventListener('click',()=>{ state.finPeriodo = el.dataset.finperiodo; renderView(); }));
   document.querySelectorAll('[data-finaba]').forEach(el=>el.addEventListener('click',()=>{ state.finAba = el.dataset.finaba; renderView(); }));
@@ -2190,6 +2425,7 @@ function bindFinanceiro(){
   document.querySelector('[data-fin-next]').addEventListener('click',()=>finNavigate(1));
   document.querySelectorAll('[data-desp-id]').forEach(el=>el.addEventListener('click',()=>openDespesaModal(el.dataset.despId)));
   document.querySelectorAll('[data-pedido-id]').forEach(el=>el.addEventListener('click',()=>navigate('pedido-form',{id:el.dataset.pedidoId})));
+  document.querySelectorAll('[data-fin-empresa-id]').forEach(el=>el.addEventListener('click',()=>navigate('empresa-terc-detalhes',{id:el.dataset.finEmpresaId})));
   document.getElementById('fab-despesa').addEventListener('click',()=>openDespesaModal(null));
 }
 function openDespesaModal(id){
@@ -2214,6 +2450,81 @@ function openDespesaModal(id){
     const ok = await confirmDialog('Excluir esta despesa?');
     if(ok){ DB.despesas = DB.despesas.filter(x=>x.id!==d.id); await dbSave(); closeModal(ov); renderView(); toast('Despesa excluída','ok'); }
   });
+}
+
+/* ======================================================================
+   FINANCEIRO — DETALHES DE VENDAS POR EMPRESA TERCEIRIZADA
+   Acessado ao tocar em uma empresa no detalhamento "Terceirizadas" do
+   Financeiro: mostra os dados da empresa e TODAS as vendas (itens de
+   pedido) já lançadas com ela, em qualquer período.
+   ====================================================================== */
+function empresaTercVendaRow(v){
+  const {p,t,total} = v;
+  const cli = findCliente(p.clienteId);
+  const restante = pedidoRestante(p);
+  return '<div class="list-item" data-pedido-id="'+p.id+'">'+
+    '<div class="bar" style="background:'+statusColor(p.status)+'"></div>'+
+    '<div class="ico">'+ic('tag',18)+'</div>'+
+    '<div class="body">'+
+      '<div class="t1">Pedido #'+String(p.numero).padStart(5,'0')+' · '+escapeHtml(cli?cli.nome:'Cliente não definido')+'</div>'+
+      '<div class="t2">'+fmtDateBR(p.data)+'</div>'+
+      '<div class="t2">'+escapeHtml(t.item||'Sem descrição')+' · '+(t.qtd||0)+' x '+fmtMoney(t.valor)+'</div>'+
+      (restante>0.004? '<div class="t2" style="color:var(--danger);font-weight:700">Falta '+fmtMoney(restante)+' no pedido</div>' : '<div class="t2" style="color:var(--ok);font-weight:700">Valor Total Pago</div>')+
+    '</div>'+
+    '<div class="end"><div class="price">'+fmtMoney(total)+'</div><span class="badge '+statusClass(p.status)+'" style="margin-top:4px">'+statusLabel(p.status)+'</span></div>'+
+  '</div>';
+}
+function viewEmpresaTercDetalhesFinanceiro(id){
+  const e = findEmpresaTerc(id);
+  if(!e){
+    return ''+
+    '<div class="page-head"><div class="flex gap-8" style="align-items:center">'+
+      '<button class="icon-btn" style="background:#F5EAF0;color:#2B1A26" data-back-fin>'+ic('back',18)+'</button>'+
+      '<div><h2>Empresa não encontrada</h2><p class="sub">Ela pode ter sido excluída do cadastro.</p></div>'+
+    '</div></div>'+
+    '<div class="card"><div class="empty">'+ic('truck',44)+'<h4>Nada para mostrar</h4><p>Volte ao Financeiro e escolha outra empresa.</p></div></div>';
+  }
+  const vendas = empresaTercVendas(e.id, e.nome);
+  const totalVendido = vendas.reduce((s,v)=>s+v.total,0);
+  const qtdPedidos = new Set(vendas.map(v=>v.p.id)).size;
+  const ticketMedio = qtdPedidos? totalVendido/qtdPedidos : 0;
+  const totalRestante = [...new Set(vendas.map(v=>v.p.id))].reduce((s,pid)=>{ const p=DB.pedidos.find(x=>x.id===pid); return s+(p?pedidoRestante(p):0); },0);
+
+  return ''+
+  '<div class="page-head">'+
+    '<div class="flex gap-8" style="align-items:center">'+
+      '<button class="icon-btn" style="background:#F5EAF0;color:#2B1A26" data-back-fin>'+ic('back',18)+'</button>'+
+      '<div><h2>'+escapeHtml(e.nome)+'</h2><p class="sub">Todas as vendas registradas com esta empresa terceirizada</p></div>'+
+    '</div>'+
+    '<button class="btn btn-ghost btn-sm" id="fin-et-editar">'+ic('edit',15)+' Editar cadastro</button>'+
+  '</div>'+
+  '<div class="card">'+
+    (e.telefone? '<div class="stat"><span class="lbl">Telefone</span><span class="val">'+escapeHtml(e.telefone)+'</span></div>' : '')+
+    (e.email? '<div class="stat"><span class="lbl">E-mail</span><span class="val">'+escapeHtml(e.email)+'</span></div>' : '')+
+    (e.endereco? ('<div class="evt-endereco" style="margin-top:8px"><span class="addr-text">'+ic('pin',12)+' '+escapeHtml(e.endereco)+'</span>'+
+      '<button type="button" class="maps-link" data-maps-addr="'+escapeHtml(e.endereco)+'">'+ic('pin',12)+' Ver no mapa</button></div>') : '')+
+    (e.itens? '<div class="stat" style="margin-top:10px;align-items:flex-start"><span class="lbl">Costuma prestar</span><span class="val" style="text-align:right;max-width:60%;font-weight:700">'+escapeHtml(e.itens)+'</span></div>' : '')+
+    (!e.telefone && !e.email && !e.endereco && !e.itens? '<p class="muted" style="font-size:13px">Nenhuma informação de contato cadastrada ainda.</p>' : '')+
+  '</div>'+
+  '<div class="section-title">'+ic('dollar',16)+' Resumo de vendas</div>'+
+  '<p class="muted" style="font-size:12.5px;margin:-10px 0 12px">O valor abaixo é pago à empresa na hora de cada evento e já entra automaticamente como despesa no Financeiro.</p>'+
+  '<div class="card">'+
+    '<div class="stat"><span class="lbl">Total vendido (todos os pedidos)</span><span class="val pink">'+fmtMoney(totalVendido)+'</span></div>'+
+    '<div class="stat"><span class="lbl">Pedidos com esta empresa</span><span class="val">'+qtdPedidos+'</span></div>'+
+    '<div class="stat"><span class="lbl">Ticket médio por pedido</span><span class="val">'+fmtMoney(ticketMedio)+'</span></div>'+
+    '<div class="stat"><span class="lbl">Ainda a receber (destes pedidos)</span><span class="val" style="color:'+(totalRestante>0.004?'var(--danger)':'var(--ok)')+'">'+fmtMoney(totalRestante)+'</span></div>'+
+  '</div>'+
+  '<div class="section-title">'+ic('tag',16)+' Vendas / itens contratados ('+vendas.length+')</div>'+
+  '<div>'+(vendas.length? vendas.map(v=>empresaTercVendaRow(v)).join('') :
+    '<div class="card"><div class="empty" style="padding:16px 0">'+ic('tag',44)+'<h4>Nenhuma venda registrada ainda</h4><p>Vincule esta empresa a um pedido para ela aparecer aqui.</p></div></div>')+'</div>';
+}
+function bindEmpresaTercDetalhesFinanceiro(id){
+  const backBtn = document.querySelector('[data-back-fin]');
+  if(backBtn) backBtn.addEventListener('click',()=>navigate('financeiro'));
+  const editBtn = document.getElementById('fin-et-editar');
+  if(editBtn) editBtn.addEventListener('click',()=>openEmpresaTercFormModal(id, ()=>renderView()));
+  document.querySelectorAll('[data-pedido-id]').forEach(el=>el.addEventListener('click',()=>navigate('pedido-form',{id:el.dataset.pedidoId})));
+  bindMapsLinks();
 }
 
 /* ======================================================================
@@ -2423,7 +2734,7 @@ function viewDocumento(id){
           '</tbody></table>'+
           '<div class="totals" style="margin-top:6px">'+
             '<div class="r"><span>Total pago</span><span>'+fmtMoney(pago)+'</span></div>'+
-            '<div class="r grand"><span>'+(restante>0.004?'Restante a pagar':'Situação')+'</span><span>'+(restante>0.004?fmtMoney(restante):'Pago integralmente')+'</span></div>'+
+            '<div class="r grand"><span>'+(restante>0.004?'Restante a pagar':'Situação')+'</span><span>'+(restante>0.004?fmtMoney(restante):'Valor Total Pago')+'</span></div>'+
           '</div>';
       })()+
       (p.obs? '<div class="obs"><b>Observações:</b> '+escapeHtml(p.obs)+'</div>':'')+
