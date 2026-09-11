@@ -302,6 +302,10 @@ main#view{flex:1;min-width:0;padding:16px 16px calc(96px + var(--safe-b));max-wi
 .terc-item .tc-actions .tc-edit{color:var(--pink-dark)}
 .terc-item .tc-actions .tc-rm{color:var(--danger)}
 .terc-item .tc-desc{font-size:12.5px;color:var(--text-soft);margin-top:3px;line-height:1.4}
+.tc-peca-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:4px 0}
+.tc-peca-row .tc-desc{flex:1;min-width:0}
+.terc-peca-field{background:#FFF3F8;border:1px dashed var(--pink-2);border-radius:12px;padding:12px;margin-bottom:10px}
+.terc-peca-field:last-child{margin-bottom:0}
 .terc-item .tc-meta{display:flex;justify-content:space-between;align-items:center;margin-top:9px;padding-top:9px;border-top:1px dashed var(--line);font-size:13px}
 .terc-item .tc-meta .qv{color:var(--text-soft);font-weight:700}
 .terc-item .tc-meta .tot{font-weight:800;color:var(--pink-dark);font-size:14px}
@@ -719,11 +723,26 @@ function findEmpresaTerc(id){ return DB.empresasTerceirizadas.find(e=>e.id===id)
    informado — funciona tanto no app do Google Maps (mobile) quanto no
    navegador (desktop), sem precisar de chave de API. */
 function mapsLink(endereco){ return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(endereco||''); }
+/* Cada empresa terceirizada de um pedido pode conter várias "peças"
+   (itens/serviços com nome, quantidade, valor e observação próprios),
+   igual ao padrão "+ Adicionar Peça". Pedidos salvos antes desse recurso
+   guardavam um único item/qtd/valor/obs direto na entrada — estas funções
+   tratam os dois formatos de forma transparente em todo o app. */
+function tercPecas(t){
+  if(Array.isArray(t.pecas)) return t.pecas;
+  return [{id:(t.id||'pc')+'_0', nome:t.item||'', qtd:Number(t.qtd)||0, valor:Number(t.valor)||0, obs:t.obs||''}];
+}
+function tercTotal(t){
+  return tercPecas(t).reduce((s,pc)=>s+(Number(pc.qtd)||0)*(Number(pc.valor)||0),0);
+}
+function tercResumoPecas(t){
+  return tercPecas(t).map(pc=>pc.nome).filter(Boolean).join(', ');
+}
 function pedidoTotal(p){
   let bruto=0, descontoItens=0;
   (p.produtos||[]).forEach(i=>{ const pr=findProduto(i.id); if(pr){ const b=pr.preco*i.qtd; const d=Math.min(Number(i.desconto)||0,b); bruto+=b; descontoItens+=d; } });
   (p.servicos||[]).forEach(i=>{ const sv=findServico(i.id); if(sv){ const b=sv.preco*i.qtd; const d=Math.min(Number(i.desconto)||0,b); bruto+=b; descontoItens+=d; } });
-  (p.terceirizados||[]).forEach(t=>{ bruto += (Number(t.qtd)||0)*(Number(t.valor)||0); });
+  (p.terceirizados||[]).forEach(t=>{ bruto += tercTotal(t); });
   const total = (bruto - descontoItens) - (Number(p.desconto)||0);
   return Math.max(total,0);
 }
@@ -1556,13 +1575,18 @@ function renderPedidoItens(){
   }
   if(tWrap){
     tWrap.innerHTML = d.terceirizados.length? d.terceirizados.map((t,idx)=>{
-      const total = (Number(t.qtd)||0)*(Number(t.valor)||0);
+      const pecas = tercPecas(t);
+      const total = tercTotal(t);
       return '<div class="terc-item">'+
         '<div class="tc-top"><span class="nm">'+escapeHtml(t.empresa)+'</span>'+
           '<span class="tc-actions"><span class="tc-edit" data-tc-edit="'+idx+'">'+ic('edit',17)+'</span><span class="tc-rm" data-tc-rm="'+idx+'">'+ic('trash',17)+'</span></span></div>'+
-        '<div class="tc-desc">'+escapeHtml(t.item)+'</div>'+
-        '<div class="tc-meta"><span class="qv">'+t.qtd+' x '+fmtMoney(t.valor)+'</span><span class="tot">'+fmtMoney(total)+'</span></div>'+
-        (t.obs? '<div class="tc-obs">Obs: '+escapeHtml(t.obs)+'</div>' : '')+
+        pecas.map(pc=>
+          '<div class="tc-peca-row">'+
+            '<span class="tc-desc" style="margin-top:0">'+escapeHtml(pc.nome||'Peça sem nome')+(pc.obs? ' <span class="muted" style="font-weight:600">— '+escapeHtml(pc.obs)+'</span>':'')+'</span>'+
+            '<span class="qv" style="flex:0 0 auto">'+(pc.qtd||0)+' x '+fmtMoney(pc.valor)+'</span>'+
+          '</div>'
+        ).join('')+
+        '<div class="tc-meta"><span class="qv">'+pecas.length+' peça(s)</span><span class="tot">'+fmtMoney(total)+'</span></div>'+
       '</div>';
     }).join('') : '<p class="muted" style="font-size:13px">Nenhuma empresa terceirizada adicionada.</p>';
   }
@@ -1576,7 +1600,7 @@ function renderPedidoTotal(){
   let bruto = 0, descontoItens = 0;
   d.produtos.forEach(i=>{ const pr=findProduto(i.id); if(pr){ const b=pr.preco*i.qtd; bruto+=b; descontoItens+=Math.min(Number(i.desconto)||0,b); } });
   d.servicos.forEach(i=>{ const sv=findServico(i.id); if(sv){ const b=sv.preco*i.qtd; bruto+=b; descontoItens+=Math.min(Number(i.desconto)||0,b); } });
-  (d.terceirizados||[]).forEach(t=>{ bruto += (Number(t.qtd)||0)*(Number(t.valor)||0); });
+  (d.terceirizados||[]).forEach(t=>{ bruto += tercTotal(t); });
   const subtotal = bruto - descontoItens;
   const total = Math.max(subtotal-descontoGeral,0);
   const wrap = document.getElementById('pf-total-wrap');
@@ -1857,6 +1881,10 @@ function openPickerModal(group){
 function openTerceirizadoModal(idx){
   const d = window.__pedidoDraft;
   const t = (idx!=null && idx>=0)? d.terceirizados[idx] : null;
+  /* Estado local das peças enquanto o modal está aberto — só é gravado no
+     pedido quando "Salvar" é clicado. */
+  let pecasState = t? tercPecas(t).map(pc=>({id:pc.id||nextId(), nome:pc.nome||'', qtd:(pc.qtd!=null?pc.qtd:1), valor:(pc.valor!=null?pc.valor:0), obs:pc.obs||''})) : [{id:nextId(), nome:'', qtd:1, valor:0, obs:''}];
+
   const ov = openModal({
     title: t? 'Editar empresa terceirizada' : 'Nova empresa terceirizada',
     body:
@@ -1864,42 +1892,102 @@ function openTerceirizadoModal(idx){
         '<select id="tc-empresa-select"></select>'+
         '<button type="button" class="round-action" style="background:var(--pink-dark)" id="tc-novo-empresa" title="Cadastrar nova empresa">'+ic('plus',20)+'</button>'+
       '</div></div>'+
-      '<div class="field"><label>Itens ou serviços prestados</label><textarea id="tc-item" placeholder="Ex: Buffet completo para 50 convidados">'+escapeHtml(t?t.item:'')+'</textarea></div>'+
-      '<div class="field-row">'+
-        '<div class="field"><label>Quantidade</label><input type="number" min="1" step="1" id="tc-qtd" value="'+(t?t.qtd:1)+'"></div>'+
-        '<div class="field"><label>Valor (R$)</label><input type="number" min="0" step="0.01" id="tc-valor" value="'+(t?t.valor:0)+'"></div>'+
+      '<div class="divider"></div>'+
+      '<div class="field-row" style="align-items:center;justify-content:space-between">'+
+        '<label style="margin:0;display:flex;align-items:center;gap:6px">'+ic('box',15)+' Peças desta empresa</label>'+
+        '<button type="button" class="btn btn-gold btn-sm" id="tc-add-peca">'+ic('plus',14)+' Adicionar Peça</button>'+
       '</div>'+
-      '<div class="field"><label>Observação</label><textarea id="tc-obs" placeholder="Detalhes, horário de entrega, contato do responsável...">'+escapeHtml(t?t.obs:'')+'</textarea></div>',
+      '<div id="tc-pecas-list" class="mt-8"></div>'+
+      '<div class="divider"></div>'+
+      '<div class="field-row" style="justify-content:space-between;font-weight:800;color:var(--pink-dark);font-size:15px"><span>Subtotal Peças</span><span id="tc-subtotal">'+fmtMoney(0)+'</span></div>',
     foot: (t? '<button class="btn btn-danger" id="tc-del">'+ic('trash',16)+'</button>':'') +
       '<button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-primary" id="tc-save">'+ic('check',16)+' Salvar</button>'
   });
 
+  function readPecasFromDom(){
+    pecasState = pecasState.map(pc=>{
+      const nomeEl = document.getElementById('tc-pc-nome-'+pc.id);
+      const qtdEl = document.getElementById('tc-pc-qtd-'+pc.id);
+      const valorEl = document.getElementById('tc-pc-valor-'+pc.id);
+      const obsEl = document.getElementById('tc-pc-obs-'+pc.id);
+      return {
+        id: pc.id,
+        nome: nomeEl? nomeEl.value : pc.nome,
+        qtd: qtdEl? qtdEl.value : pc.qtd,
+        valor: valorEl? valorEl.value : pc.valor,
+        obs: obsEl? obsEl.value : pc.obs
+      };
+    });
+  }
+  function updateSubtotalDisplay(){
+    const el = document.getElementById('tc-subtotal');
+    const subtotal = pecasState.reduce((s,pc)=> s+(Number(pc.qtd)||0)*(Number(pc.valor)||0), 0);
+    if(el) el.textContent = fmtMoney(subtotal);
+  }
+  function renderTercPecasFields(){
+    const wrap = document.getElementById('tc-pecas-list');
+    if(!wrap) return;
+    wrap.innerHTML = pecasState.map((pc,i)=>
+      '<div class="terc-peca-field">'+
+        '<div class="field-row" style="align-items:flex-end">'+
+          '<div class="field" style="flex:1"><label>Nome da peça'+(pecasState.length>1?(' #'+(i+1)):'')+'</label><input type="text" id="tc-pc-nome-'+pc.id+'" value="'+escapeHtml(pc.nome)+'" placeholder="Ex: Buffet completo, Bolo, Som..."></div>'+
+          (pecasState.length>1? '<button type="button" class="round-action" style="background:#FBE7E7;color:var(--danger)" data-pc-rm="'+pc.id+'" title="Remover peça">'+ic('trash',18)+'</button>' : '')+
+        '</div>'+
+        '<div class="field-row">'+
+          '<div class="field"><label>Quantidade</label><input type="number" min="1" step="1" id="tc-pc-qtd-'+pc.id+'" value="'+pc.qtd+'"></div>'+
+          '<div class="field"><label>Valor da peça (R$)</label><input type="number" min="0" step="0.01" id="tc-pc-valor-'+pc.id+'" value="'+pc.valor+'"></div>'+
+        '</div>'+
+        '<div class="field"><label>Observação</label><input type="text" id="tc-pc-obs-'+pc.id+'" value="'+escapeHtml(pc.obs)+'" placeholder="Detalhes desta peça (opcional)"></div>'+
+      '</div>'
+    ).join('');
+    wrap.querySelectorAll('[data-pc-rm]').forEach(btn=>btn.addEventListener('click',()=>{
+      readPecasFromDom();
+      pecasState = pecasState.filter(pc=>pc.id!==btn.dataset.pcRm);
+      renderTercPecasFields();
+    }));
+    wrap.querySelectorAll('input[type="number"]').forEach(inp=>inp.addEventListener('input', ()=>{ readPecasFromDom(); updateSubtotalDisplay(); }));
+    updateSubtotalDisplay();
+  }
+
   refreshTerceirizadoEmpresaSelect(t);
+  renderTercPecasFields();
+
+  ov.querySelector('#tc-add-peca').addEventListener('click', ()=>{
+    readPecasFromDom();
+    pecasState.push({id:nextId(), nome:'', qtd:1, valor:0, obs:''});
+    renderTercPecasFields();
+  });
 
   ov.querySelector('#tc-novo-empresa').addEventListener('click', ()=>{
     openEmpresaTercFormModal(null, (novaEmpresa)=>{
       refreshTerceirizadoEmpresaSelect(null, novaEmpresa.id);
-      const itemField = document.getElementById('tc-item');
-      if(itemField && !itemField.value.trim() && novaEmpresa.itens){ itemField.value = novaEmpresa.itens; }
+      readPecasFromDom();
+      if(novaEmpresa.itens && pecasState.length===1 && !pecasState[0].nome.trim()){
+        pecasState[0].nome = novaEmpresa.itens;
+        renderTercPecasFields();
+      }
     });
   });
   ov.querySelector('#tc-empresa-select').addEventListener('change', (e)=>{
     const emp = findEmpresaTerc(e.target.value);
-    const itemField = document.getElementById('tc-item');
-    if(emp && emp.itens && itemField && !itemField.value.trim()){ itemField.value = emp.itens; }
+    readPecasFromDom();
+    if(emp && emp.itens && pecasState.length===1 && !pecasState[0].nome.trim()){
+      pecasState[0].nome = emp.itens;
+      renderTercPecasFields();
+    }
   });
 
   ov.querySelector('#tc-save').addEventListener('click', ()=>{
+    readPecasFromDom();
     const empresaId = document.getElementById('tc-empresa-select').value;
     const empresaObj = findEmpresaTerc(empresaId);
-    const item = document.getElementById('tc-item').value.trim();
-    const qtd = Math.max(1, Number(document.getElementById('tc-qtd').value)||1);
-    const valor = Math.max(0, Number(document.getElementById('tc-valor').value)||0);
-    const obs = document.getElementById('tc-obs').value.trim();
     if(!empresaObj){ toast('Selecione a empresa terceirizada (ou cadastre uma nova pelo botão +)','err'); return; }
-    if(!item){ toast('Informe o(s) item(ns) ou serviço(s) prestado(s)','err'); return; }
-    if(t){ Object.assign(t, {empresaId, empresa:empresaObj.nome, item, qtd, valor, obs}); }
-    else { d.terceirizados.push({id:nextId(), empresaId, empresa:empresaObj.nome, item, qtd, valor, obs}); }
+    const pecasValidas = pecasState.map(pc=>({
+      id: pc.id, nome:(pc.nome||'').trim(), qtd: Math.max(1, Number(pc.qtd)||1), valor: Math.max(0, Number(pc.valor)||0), obs:(pc.obs||'').trim()
+    })).filter(pc=>pc.nome);
+    if(pecasValidas.length===0){ toast('Adicione ao menos uma peça com o nome preenchido','err'); return; }
+    if(t){ Object.assign(t, {empresaId, empresa:empresaObj.nome, pecas:pecasValidas}); delete t.item; delete t.qtd; delete t.valor; delete t.obs; }
+    else { d.terceirizados.push({id:nextId(), empresaId, empresa:empresaObj.nome, pecas:pecasValidas}); }
     closeModal(ov);
     renderPedidoItens();
     toast('Empresa terceirizada salva','ok');
@@ -2207,7 +2295,7 @@ function pedidoValoresPorBucket(p){
   let brutoProprio=0, descProprio=0, brutoTerc=0;
   (p.produtos||[]).forEach(i=>{ const pr=findProduto(i.id); if(pr){ const b=pr.preco*i.qtd; const d=Math.min(Number(i.desconto)||0,b); brutoProprio+=b; descProprio+=d; } });
   (p.servicos||[]).forEach(i=>{ const sv=findServico(i.id); if(sv){ const b=sv.preco*i.qtd; const d=Math.min(Number(i.desconto)||0,b); brutoProprio+=b; descProprio+=d; } });
-  (p.terceirizados||[]).forEach(t=>{ brutoTerc += (Number(t.qtd)||0)*(Number(t.valor)||0); });
+  (p.terceirizados||[]).forEach(t=>{ brutoTerc += tercTotal(t); });
   const liquidoProprio = brutoProprio - descProprio;
   const liquidoTerc = brutoTerc;
   const subtotal = liquidoProprio + liquidoTerc;
@@ -2243,7 +2331,7 @@ function finBreakdownTerceirizadas(pedidos){
   const map = {};
   pedidos.forEach(p=>{
     (p.terceirizados||[]).forEach(t=>{
-      const total = (Number(t.qtd)||0)*(Number(t.valor)||0);
+      const total = tercTotal(t);
       const emp = resolveEmpresaTercFromItem(t);
       const key = emp? emp.id : ('_naocadastrada_'+(t.empresa||'Sem nome'));
       if(!map[key]){ map[key] = {id: emp?emp.id:null, nome: emp?emp.nome:((t.empresa||'Sem nome')+' (não cadastrada)'), total:0, cadastrada: !!emp}; }
@@ -2252,16 +2340,18 @@ function finBreakdownTerceirizadas(pedidos){
   });
   return Object.values(map).sort((a,b)=>b.total-a.total);
 }
-/* Todas as "vendas" (itens de pedido) de uma empresa terceirizada
+/* Todas as "vendas" (peças/itens de pedido) de uma empresa terceirizada
    cadastrada, em todos os pedidos já lançados — usado na área de detalhes
-   financeiros da empresa. */
+   financeiros da empresa. Cada peça vira uma linha própria. */
 function empresaTercVendas(empresaId, empresaNome){
   const vendas = [];
   DB.pedidos.forEach(p=>{
     (p.terceirizados||[]).forEach(t=>{
       const emp = resolveEmpresaTercFromItem(t);
-      const match = emp? emp.id===empresaId : false;
-      if(match){ vendas.push({p, t, total:(Number(t.qtd)||0)*(Number(t.valor)||0)}); }
+      if(!emp || emp.id!==empresaId) return;
+      tercPecas(t).forEach(pc=>{
+        vendas.push({p, t, peca:pc, total:(Number(pc.qtd)||0)*(Number(pc.valor)||0)});
+      });
     });
   });
   vendas.sort((a,b)=> (b.p.data||'').localeCompare(a.p.data||''));
@@ -2271,8 +2361,9 @@ function empresaTercVendas(empresaId, empresaNome){
    pago a ela na hora do evento — não fica no caixa da Celia Decorações.
    Por isso, para todo item de "terceirizados" vinculado a uma empresa
    cadastrada, geramos automaticamente uma "despesa" no Financeiro (na
-   data do evento), descontando esse valor do saldo do período. Empresas
-   ainda não cadastradas não geram despesa automática — apenas o cadastro
+   data do evento, somando todas as peças daquela empresa naquele
+   pedido), descontando esse valor do saldo do período. Empresas ainda
+   não cadastradas não geram despesa automática — apenas o cadastro
    formal garante que o valor seja de fato repassado a um terceiro. */
 function terceirizadosCadastradosDespesa(pedidos){
   const linhas = [];
@@ -2280,7 +2371,7 @@ function terceirizadosCadastradosDespesa(pedidos){
     (p.terceirizados||[]).forEach(t=>{
       const emp = resolveEmpresaTercFromItem(t);
       if(!emp) return;
-      const valor = (Number(t.qtd)||0)*(Number(t.valor)||0);
+      const valor = tercTotal(t);
       if(valor<=0) return;
       linhas.push({p, t, empresa:emp, valor, data:p.data});
     });
@@ -2413,7 +2504,7 @@ function empresaTercDespesaRow(x){
     '<div class="ico" style="background:#FBE7E7;color:var(--danger)">'+ic('truck',18)+'</div>'+
     '<div class="body"><div class="t1">'+escapeHtml(empresa.nome)+' <small class="muted" style="font-weight:600">(terceirizado)</small></div>'+
       '<div class="t2">'+fmtDateBR(p.data)+' · Pedido #'+String(p.numero).padStart(5,'0')+'</div>'+
-      (t.item? '<div class="t2" style="color:var(--text-faint)">'+escapeHtml(t.item)+'</div>' : '')+
+      (tercResumoPecas(t)? '<div class="t2" style="color:var(--text-faint)">'+escapeHtml(tercResumoPecas(t))+'</div>' : '')+
     '</div>'+
     '<div class="end"><div class="price" style="color:var(--danger)">- '+fmtMoney(valor)+'</div></div>'+
   '</div>';
@@ -2459,7 +2550,7 @@ function openDespesaModal(id){
    pedido) já lançadas com ela, em qualquer período.
    ====================================================================== */
 function empresaTercVendaRow(v){
-  const {p,t,total} = v;
+  const {p,t,peca,total} = v;
   const cli = findCliente(p.clienteId);
   const restante = pedidoRestante(p);
   return '<div class="list-item" data-pedido-id="'+p.id+'">'+
@@ -2468,7 +2559,8 @@ function empresaTercVendaRow(v){
     '<div class="body">'+
       '<div class="t1">Pedido #'+String(p.numero).padStart(5,'0')+' · '+escapeHtml(cli?cli.nome:'Cliente não definido')+'</div>'+
       '<div class="t2">'+fmtDateBR(p.data)+'</div>'+
-      '<div class="t2">'+escapeHtml(t.item||'Sem descrição')+' · '+(t.qtd||0)+' x '+fmtMoney(t.valor)+'</div>'+
+      '<div class="t2">'+escapeHtml(peca.nome||'Sem descrição')+' · '+(peca.qtd||0)+' x '+fmtMoney(peca.valor)+'</div>'+
+      (peca.obs? '<div class="t2" style="color:var(--text-faint)">Obs: '+escapeHtml(peca.obs)+'</div>' : '')+
       (restante>0.004? '<div class="t2" style="color:var(--danger);font-weight:700">Falta '+fmtMoney(restante)+' no pedido</div>' : '<div class="t2" style="color:var(--ok);font-weight:700">Valor Total Pago</div>')+
     '</div>'+
     '<div class="end"><div class="price">'+fmtMoney(total)+'</div><span class="badge '+statusClass(p.status)+'" style="margin-top:4px">'+statusLabel(p.status)+'</span></div>'+
@@ -2686,7 +2778,7 @@ function viewDocumento(id){
   const itens = [];
   (p.produtos||[]).forEach(i=>{ const pr=findProduto(i.id); if(pr){ const b=pr.preco*i.qtd; const desc=Math.min(Number(i.desconto)||0,b); itens.push({nome:pr.nome, unit:pr.preco, unidade:pr.unidade, qtd:i.qtd, desconto:desc, total:b-desc}); } });
   (p.servicos||[]).forEach(i=>{ const sv=findServico(i.id); if(sv){ const b=sv.preco*i.qtd; const desc=Math.min(Number(i.desconto)||0,b); itens.push({nome:sv.nome, unit:sv.preco, unidade:'pacote', qtd:i.qtd, desconto:desc, total:b-desc}); } });
-  (p.terceirizados||[]).forEach(t=>{ itens.push({nome:t.empresa+' — '+t.item, unit:t.valor, unidade:'', qtd:t.qtd, desconto:0, total:t.qtd*t.valor, obsItem:t.obs}); });
+  (p.terceirizados||[]).forEach(t=>{ tercPecas(t).forEach(pc=>{ itens.push({nome:t.empresa+' — '+(pc.nome||'Peça'), unit:pc.valor, unidade:'', qtd:pc.qtd, desconto:0, total:(Number(pc.qtd)||0)*(Number(pc.valor)||0), obsItem:pc.obs}); }); });
   const descontoItensTotal = itens.reduce((s,i)=>s+i.desconto,0);
   const subtotal = itens.reduce((s,i)=>s+i.total,0) + descontoItensTotal;
   const total = pedidoTotal(p);
