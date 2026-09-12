@@ -286,6 +286,14 @@ main#view{flex:1;min-width:0;padding:16px 16px calc(96px + var(--safe-b));max-wi
   width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;
   font-size:15px;background:var(--tag-color,var(--pink));flex:0 0 auto;
 }
+/* Botão "+ Emojis" (mesmo tamanho de slot da grade de etiquetas) e grade
+   de emojis extras para a pessoa criar sua própria etiqueta de despesa. */
+.tag-pick.tag-add{background:var(--white);border-style:dashed;color:var(--pink-dark)}
+.tag-pick.tag-add .tag-emoji{background:#FFF6FA;color:var(--pink-dark);font-size:20px;box-shadow:none}
+.emoji-pick-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;max-height:230px;overflow-y:auto;padding:2px 2px 4px}
+.emoji-pick{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--line);background:var(--white);font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.emoji-pick:hover{box-shadow:var(--shadow-s)}
+.emoji-pick.active{border-color:var(--pink-dark);background:#FFEAF2;transform:scale(1.05)}
 .status-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;white-space:nowrap}
 .status-badge.pago{background:#E4F5EC;color:var(--ok)}
 .status-badge.pendente{background:#FFF1D6;color:#A5730F}
@@ -312,6 +320,19 @@ main#view{flex:1;min-width:0;padding:16px 16px calc(96px + var(--safe-b));max-wi
 .sel-item .price{font-weight:800;font-size:13px;min-width:70px;text-align:right;margin-left:auto}
 .sel-item .rm{color:var(--danger);cursor:pointer;flex:0 0 auto}
 .sel-item .rm svg{width:18px;height:18px}
+.sel-item .si-obs{font-size:12px;color:var(--text-soft);font-style:italic;background:var(--white);border:1px solid var(--line);border-radius:8px;padding:6px 8px;display:flex;gap:6px;align-items:flex-start}
+.sel-item .si-obs svg{flex:0 0 auto;margin-top:1px;color:var(--pink-dark)}
+.sel-item .si-actions{display:flex;gap:8px;flex-wrap:wrap;padding-top:2px;border-top:1px dashed var(--line)}
+.item-mini-btn{display:inline-flex;align-items:center;gap:5px;background:var(--white);color:var(--pink-dark);border:1.5px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12px;font-weight:800;cursor:pointer}
+.item-mini-btn svg{width:13px;height:13px}
+.item-mini-btn.is-set{background:var(--pink-dark);color:var(--white);border-color:var(--pink-dark)}
+
+/* Peças/empresas terceirizadas nas prévias da Agenda */
+.agenda-terc-wrap{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+.agenda-terc-empresa{background:#FFF3F8;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.agenda-terc-empresa .ate-nome{display:flex;align-items:center;gap:6px;font-weight:800;font-size:12.5px;color:var(--text)}
+.agenda-terc-empresa .ate-nome svg{color:var(--pink-dark)}
+.agenda-terc-empresa .ate-pecas{margin:4px 0 0;padding-left:18px;font-size:12px;color:var(--text-soft);line-height:1.5}
 
 /* Endereço do evento nas prévias (Agenda/Home/Pedidos) + botão do Google Maps */
 .evt-endereco{display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap}
@@ -650,6 +671,7 @@ function defaultDB(){
     pedidoSeq: 1,
     config:{ nome:'Celia Decorações', endereco:'', telefone:'', email:'', logo:'' },
     clientes:[], produtos:[], servicos:[], pedidos:[], agenda:[], despesas:[], empresasTerceirizadas:[],
+    despesaTagsCustom:[],
     onboarded:false
   };
 }
@@ -747,6 +769,41 @@ function onlyDigits(s){ return (s||'').replace(/\D/g,''); }
 function waLink(phone,text){ return 'https://wa.me/'+(onlyDigits(phone) ? '55'+onlyDigits(phone) : '') + (text?('?text='+encodeURIComponent(text)):''); }
 function telLink(phone){ return 'tel:'+onlyDigits(phone); }
 function findCliente(id){ return DB.clientes.find(c=>c.id===id); }
+/* Resumo financeiro (quantidade de pedidos, valor total contratado,
+   total pago e total em aberto) usado no histórico de um cliente ou de
+   uma empresa terceirizada dentro do respectivo modal de cadastro. */
+function resumoPedidosHtml(pedidos){
+  if(!pedidos.length) return '';
+  const totalContratado = pedidos.reduce((s,p)=>s+pedidoTotal(p),0);
+  const totalPago = pedidos.reduce((s,p)=>s+pedidoValorPago(p),0);
+  const totalRestante = Math.max(totalContratado-totalPago,0);
+  return '<div class="total-box" style="background:var(--bg);margin-bottom:10px">'+
+    '<div class="row"><span>Pedidos</span><span>'+pedidos.length+'</span></div>'+
+    '<div class="row"><span>Valor total contratado</span><span>'+fmtMoney(totalContratado)+'</span></div>'+
+    '<div class="row"><span>Valor total pago</span><span style="color:var(--ok);font-weight:800">'+fmtMoney(totalPago)+'</span></div>'+
+    '<div class="row grand"><span>Em aberto</span><span style="color:'+(totalRestante>0.004?'var(--danger)':'var(--ok)')+'">'+fmtMoney(totalRestante)+'</span></div>'+
+  '</div>';
+}
+/* Bloco completo de histórico de pedidos (resumo financeiro + lista de
+   todos os pedidos, mais recente primeiro, cada um já clicável e levando
+   direto para o Pedido) — usado tanto no cadastro de Cliente quanto no
+   de Empresa Terceirizada. */
+function historicoPedidosHtml(pedidos){
+  if(!pedidos.length) return '<p class="muted" style="font-size:13px">Nenhum pedido ainda.</p>';
+  const ordenados = pedidos.slice().sort((a,b)=> b.data.localeCompare(a.data) || b.numero-a.numero);
+  return resumoPedidosHtml(ordenados) + ordenados.map(p=>pedidoRow(p)).join('');
+}
+/* Liga os cliques dos pedidos listados dentro de um modal (histórico do
+   Cliente / da Empresa Terceirizada): fecha o modal e abre o Pedido
+   correspondente, exatamente como na lista de Pedidos. */
+function bindHistoricoPedidos(ov){
+  ov.querySelectorAll('[data-pedido-id]').forEach(el=>el.addEventListener('click',()=>{
+    const pid = el.dataset.pedidoId;
+    closeModal(ov);
+    navigate('pedido-form',{id:pid});
+  }));
+  bindMapsLinks();
+}
 function findProduto(id){ return DB.produtos.find(p=>p.id===id); }
 function findServico(id){ return DB.servicos.find(s=>s.id===id); }
 function findEmpresaTerc(id){ return DB.empresasTerceirizadas.find(e=>e.id===id); }
@@ -768,6 +825,21 @@ function resolvedItem(group, i){
   const nome = i.nome || (catalogItem? catalogItem.nome : '(item removido do catálogo)');
   const unidade = (i.unidade!=null && i.unidade!=='') ? i.unidade : (catalogItem? (catalogItem.unidade||'') : '');
   return {preco, nome, unidade, catalogItem};
+}
+/* Quantidade de DIAS de um item de produto/serviço do pedido (usado
+   principalmente nos produtos de aluguel): quando definida, o valor do
+   item passa a ser somado por dia (preço x quantidade x dias). Pedidos
+   salvos antes deste recurso simplesmente não têm o campo "dias" — nesse
+   caso o valor default é 1 dia, ou seja, o cálculo continua exatamente
+   igual a antes (nenhum pedido antigo muda de valor). */
+function itemDias(i){
+  const n = Math.round(Number(i && i.dias));
+  return (isFinite(n) && n>=1) ? n : 1;
+}
+/* Valor bruto (sem desconto) de um item de produto/serviço do pedido,
+   já considerando quantidade e dias. */
+function itemBruto(group, i){
+  return resolvedItem(group, i).preco * (Number(i.qtd)||0) * itemDias(i);
 }
 /* Congela (uma única vez) o preço/nome/unidade de todo item de
    produto/serviço em todos os pedidos salvos que ainda não têm essa
@@ -818,8 +890,8 @@ function tercResumoPecas(t){
 function pedidoTaxaEntrega(p){ return Math.max(Number(p && p.evento && p.evento.taxaEntrega)||0, 0); }
 function pedidoTotal(p){
   let bruto=0, descontoItens=0;
-  (p.produtos||[]).forEach(i=>{ const b=resolvedItem('produtos',i).preco*i.qtd; const d=Math.min(Number(i.desconto)||0,b); bruto+=b; descontoItens+=d; });
-  (p.servicos||[]).forEach(i=>{ const b=resolvedItem('servicos',i).preco*i.qtd; const d=Math.min(Number(i.desconto)||0,b); bruto+=b; descontoItens+=d; });
+  (p.produtos||[]).forEach(i=>{ const b=itemBruto('produtos',i); const d=Math.min(Number(i.desconto)||0,b); bruto+=b; descontoItens+=d; });
+  (p.servicos||[]).forEach(i=>{ const b=itemBruto('servicos',i); const d=Math.min(Number(i.desconto)||0,b); bruto+=b; descontoItens+=d; });
   (p.terceirizados||[]).forEach(t=>{ bruto += tercTotal(t); });
   bruto += pedidoTaxaEntrega(p);
   const total = (bruto - descontoItens) - (Number(p.desconto)||0);
@@ -1140,11 +1212,13 @@ function quickCard(icon,label,action,bg,color){
 function agendaRowHtml(a){
   const cli = a.clienteId? findCliente(a.clienteId): null;
   const pedido = a.pedidoId? DB.pedidos.find(x=>x.id===a.pedidoId) : null;
+  const itensLinhas = pedido? pedidoItensLinhas(pedido) : [];
   return '<div class="list-item" data-open-agenda="'+a.id+'" style="border:none;padding:10px 0;box-shadow:none">'+
     '<div class="bar" style="background:'+statusColor(a.status)+'"></div>'+
     '<div class="ico">'+ic(pedido?'tag':'calendar',18)+'</div>'+
     '<div class="body"><div class="t1">'+agendaHoraLabel(a)+' · '+escapeHtml(a.titulo||'Compromisso')+'</div><div class="t2">'+(cli?escapeHtml(cli.nome):'Sem cliente vinculado')+'</div>'+
-      (a.obs? '<div class="t2" style="color:var(--text-faint)">🎈 '+escapeHtml(a.obs)+'</div>' : '')+
+      (pedido? (itensLinhas.length? '<div class="t2" style="color:var(--text-faint)">🎈 '+escapeHtml(itensLinhas.join(' · '))+'</div>' : '') : (a.obs? '<div class="t2" style="color:var(--text-faint)">🎈 '+escapeHtml(a.obs)+'</div>' : ''))+
+      (pedido? agendaTerceirizadosBlockHtml(pedido) : '')+
       (a.endereco? ('<div class="evt-endereco"><span class="addr-text">'+ic('pin',12)+' '+escapeHtml(a.endereco)+'</span>'+
         '<button type="button" class="maps-link" data-maps-addr="'+escapeHtml(a.endereco)+'">'+ic('pin',12)+' Ver no mapa</button></div>') : '')+
     '</div>'+
@@ -1165,6 +1239,36 @@ function pedidoResumoItens(p){
   (p.produtos||[]).forEach(i=>{ const nome=resolvedItem('produtos',i).nome; if(nome) partes.push(nome+(i.qtd>1?' x'+i.qtd:'')); });
   (p.terceirizados||[]).forEach(t=>{ if(t.empresa) partes.push(t.empresa); });
   return partes.join(' · ');
+}
+/* Só os serviços/produtos próprios (sem terceirizados), na ordem em que
+   foram adicionados ao pedido — usado nas prévias da Agenda. */
+function pedidoItensLinhas(p){
+  const partes = [];
+  (p.servicos||[]).forEach(i=>{ const nome=resolvedItem('servicos',i).nome; if(nome) partes.push(nome+(i.qtd>1?' x'+i.qtd:'')); });
+  (p.produtos||[]).forEach(i=>{ const nome=resolvedItem('produtos',i).nome; if(nome) partes.push(nome+(i.qtd>1?' x'+i.qtd:'')); });
+  return partes;
+}
+/* Empresas terceirizadas do pedido com suas peças, na ordem em que cada
+   peça foi adicionada — usado para mostrar, na Agenda, o nome de cada
+   empresa e os pedidos de peças separados e organizados por empresa. */
+function pedidoTerceirizadosResumo(p){
+  return (p.terceirizados||[]).filter(t=>t.empresa).map(t=>({
+    empresa: t.empresa,
+    pecas: tercPecas(t).map(pc=>pc.nome).filter(Boolean)
+  }));
+}
+/* Bloco HTML com o nome de cada empresa terceirizada do pedido e, logo
+   abaixo, a lista (em ordem) das peças pedidas para aquela empresa —
+   cada empresa em seu próprio quadro, separado e organizado. */
+function agendaTerceirizadosBlockHtml(p){
+  const tercs = pedidoTerceirizadosResumo(p);
+  if(!tercs.length) return '';
+  return '<div class="agenda-terc-wrap">'+tercs.map(t=>
+    '<div class="agenda-terc-empresa">'+
+      '<div class="ate-nome">'+ic('truck',13)+' '+escapeHtml(t.empresa)+'</div>'+
+      (t.pecas.length? ('<ol class="ate-pecas">'+t.pecas.map(nome=>'<li>'+escapeHtml(nome)+'</li>').join('')+'</ol>') : '')+
+    '</div>'
+  ).join('')+'</div>';
 }
 function syncPedidoAgenda(p){
   const hora = p.horario || (p.evento && p.evento.horario) || '';
@@ -1294,13 +1398,15 @@ function agendaFullRow(a){
   const cli = a.clienteId? findCliente(a.clienteId): null;
   const pedido = a.pedidoId? DB.pedidos.find(x=>x.id===a.pedidoId) : null;
   const restante = pedido? pedidoRestante(pedido) : 0;
+  const itensLinhas = pedido? pedidoItensLinhas(pedido) : [];
   return '<div class="list-item" data-agenda-id="'+a.id+'">'+
     '<div class="bar" style="background:'+statusColor(a.status)+'"></div>'+
     '<div class="ico">'+ic(pedido?'tag':'calendar',18)+'</div>'+
     '<div class="body">'+
       '<div class="t1">'+agendaHoraLabel(a)+' · '+escapeHtml(a.titulo||'Compromisso')+'</div>'+
       '<div class="t2">'+(cli?escapeHtml(cli.nome):(a.clienteTexto?escapeHtml(a.clienteTexto):'Sem cliente'))+'</div>'+
-      (a.obs? '<div class="t2" style="color:var(--text-faint)">🎈 '+escapeHtml(a.obs)+'</div>' : '')+
+      (pedido? (itensLinhas.length? '<div class="t2" style="color:var(--text-faint)">🎈 '+escapeHtml(itensLinhas.join(' · '))+'</div>' : '') : (a.obs? '<div class="t2" style="color:var(--text-faint)">🎈 '+escapeHtml(a.obs)+'</div>' : ''))+
+      (pedido? agendaTerceirizadosBlockHtml(pedido) : '')+
       (a.endereco? ('<div class="evt-endereco"><span class="addr-text">'+ic('pin',12)+' '+escapeHtml(a.endereco)+'</span>'+
         '<button type="button" class="maps-link" data-maps-addr="'+escapeHtml(a.endereco)+'">'+ic('pin',12)+' Ver no mapa</button></div>') : '')+
       (pedido? '<div class="t2" style="color:'+(restante>0.004?'var(--danger)':'var(--ok)')+';font-weight:700">'+(restante>0.004?('Falta '+fmtMoney(restante)):'Valor Total Pago')+'</div>' : '')+
@@ -1440,7 +1546,26 @@ const DESPESA_TAGS = [
   {id:'alugueis',       label:'Aluguéis',        emoji:'🏠', color:'#B4650F', bg:'#FBEEE0'},
   {id:'outros',         label:'Outros',          emoji:'🧾', color:'#8B8B96', bg:'#F1EFF2'}
 ];
-function findDespesaTag(id){ return DESPESA_TAGS.find(t=>t.id===id) || DESPESA_TAGS[DESPESA_TAGS.length-1]; }
+/* Emojis extras oferecidos no botão "+ Emojis" para a pessoa criar suas
+   próprias etiquetas de despesa, além das 8 categorias fixas acima
+   (essas nunca são alteradas). */
+const DESPESA_EMOJIS_EXTRA = ['🚗','⛽','🍔','👗','💊','🎁','📱','🧴','🛠️','📚','🎨','🐾','✈️','🏋️','🧹','🎵','🖨️','🪑','🚚','💇'];
+/* Paleta de cores usada (em rodízio) para colorir cada nova etiqueta
+   criada pela pessoa, no mesmo estilo visual das categorias fixas. */
+const DESPESA_COLOR_PALETTE = [
+  {color:'#D63C77', bg:'#FFE3EE'},
+  {color:'#4B4FCB', bg:'#E6E7FF'},
+  {color:'#0F9B8E', bg:'#DFF6F3'},
+  {color:'#C2410C', bg:'#FFE9DA'},
+  {color:'#7C3AED', bg:'#EFE6FE'},
+  {color:'#B4650F', bg:'#FBEEE0'},
+  {color:'#1E8A5A', bg:'#E4F5EC'},
+  {color:'#2E9BFF', bg:'#E7F3FF'}
+];
+/* Todas as etiquetas de despesa disponíveis: as 8 fixas do app + as que
+   a própria pessoa foi criando com o botão "+ Emojis". */
+function allDespesaTags(){ return DESPESA_TAGS.concat(DB.despesaTagsCustom||[]); }
+function findDespesaTag(id){ return allDespesaTags().find(t=>t.id===id) || DESPESA_TAGS[DESPESA_TAGS.length-1]; }
 function eventoResumo(p){
   const ev = p.evento; if(!ev) return '';
   const partes = [];
@@ -1711,14 +1836,20 @@ function openTaxaEntregaModal(){
   }
 }
 function selItemRow(group, i, item){
-  const bruto = item.preco*i.qtd;
+  const dias = itemDias(i);
+  const bruto = item.preco*i.qtd*dias;
   const desc = Math.min(Number(i.desconto)||0, bruto);
   return '<div class="sel-item">'+
     '<div class="si-top"><span class="nm">'+escapeHtml(item.nome)+'</span><span class="rm" data-rm="'+group+':'+i.id+'">'+ic('trash',16)+'</span></div>'+
+    (i.obs? ('<div class="si-obs">'+ic('edit',13)+' <span>'+escapeHtml(i.obs)+'</span></div>') : '')+
     '<div class="si-bottom">'+
       '<span class="qty"><button class="qty-btn" data-qm="'+group+':'+i.id+'">−</button><input type="number" class="qty-input" min="1" step="1" inputmode="numeric" data-qtyinput="'+group+':'+i.id+'" value="'+i.qtd+'"><button class="qty-btn" data-qp="'+group+':'+i.id+'">+</button></span>'+
       '<span class="disc"><label>Desc. R$</label><input type="number" min="0" step="0.01" class="disc-input" data-disc="'+group+':'+i.id+'" value="'+desc+'"></span>'+
       '<span class="price">'+fmtMoney(Math.max(bruto-desc,0))+'</span>'+
+    '</div>'+
+    '<div class="si-actions">'+
+      '<button type="button" class="item-mini-btn'+(i.obs?' is-set':'')+'" data-item-obs="'+group+':'+i.id+'">'+ic('edit',13)+' Adicionar Observação</button>'+
+      '<button type="button" class="item-mini-btn'+(dias>1?' is-set':'')+'" data-item-dias="'+group+':'+i.id+'">'+ic('calendar',13)+' '+(dias>1?('Dias: '+dias):'Adicionar Dias')+'</button>'+
     '</div>'+
   '</div>';
 }
@@ -1764,8 +1895,8 @@ function renderPedidoTotal(){
   const descontoGeral = Number(document.getElementById('pf-desconto') ? document.getElementById('pf-desconto').value : d.desconto) || 0;
   d.desconto = descontoGeral;
   let bruto = 0, descontoItens = 0;
-  d.produtos.forEach(i=>{ const b=resolvedItem('produtos',i).preco*i.qtd; bruto+=b; descontoItens+=Math.min(Number(i.desconto)||0,b); });
-  d.servicos.forEach(i=>{ const b=resolvedItem('servicos',i).preco*i.qtd; bruto+=b; descontoItens+=Math.min(Number(i.desconto)||0,b); });
+  d.produtos.forEach(i=>{ const b=itemBruto('produtos',i); bruto+=b; descontoItens+=Math.min(Number(i.desconto)||0,b); });
+  d.servicos.forEach(i=>{ const b=itemBruto('servicos',i); bruto+=b; descontoItens+=Math.min(Number(i.desconto)||0,b); });
   (d.terceirizados||[]).forEach(t=>{ bruto += tercTotal(t); });
   const taxaEntrega = Math.max(Number(d.evento.taxaEntrega)||0, 0);
   bruto += taxaEntrega;
@@ -1882,6 +2013,8 @@ function bindPedidoItemActions(){
   });
   document.querySelectorAll('[data-rm]').forEach(el=>el.addEventListener('click',()=>{ removeItem(el.dataset.rm); }));
   document.querySelectorAll('[data-disc]').forEach(el=>el.addEventListener('input',()=>{ changeDiscount(el.dataset.disc, el.value, el); }));
+  document.querySelectorAll('[data-item-obs]').forEach(el=>el.addEventListener('click',()=>{ openItemObsModal(el.dataset.itemObs); }));
+  document.querySelectorAll('[data-item-dias]').forEach(el=>el.addEventListener('click',()=>{ openItemDiasModal(el.dataset.itemDias); }));
   document.querySelectorAll('[data-tc-edit]').forEach(el=>el.addEventListener('click',()=>{ openTerceirizadoModal(Number(el.dataset.tcEdit)); }));
   document.querySelectorAll('[data-tc-rm]').forEach(el=>el.addEventListener('click',async ()=>{
     const idx = Number(el.dataset.tcRm);
@@ -1906,7 +2039,7 @@ function setQtyFromInput(key,value,el){
   const n = parseInt(value,10);
   if(!isFinite(n) || n<1) return; // aguarda o usuário terminar de digitar um valor válido
   item.qtd = n;
-  const bruto = resolvedItem(group, item).preco*item.qtd;
+  const bruto = itemBruto(group, item);
   const desc = Math.min(Number(item.desconto)||0, bruto);
   const row = el.closest('.sel-item');
   if(row){ const priceEl = row.querySelector('.price'); if(priceEl) priceEl.textContent = fmtMoney(Math.max(bruto-desc,0)); }
@@ -1929,7 +2062,7 @@ function changeDiscount(key,value,el){
   const d = window.__pedidoDraft;
   const item = d[group].find(i=>i.id===id);
   if(!item) return;
-  const bruto = resolvedItem(group, item).preco*item.qtd;
+  const bruto = itemBruto(group, item);
   item.desconto = Math.max(0, Math.min(Number(value)||0, bruto));
   const priceEl = el && el.closest('.sel-item') ? el.closest('.sel-item').querySelector('.price') : null;
   if(priceEl) priceEl.textContent = fmtMoney(Math.max(bruto-item.desconto,0));
@@ -1940,6 +2073,72 @@ function removeItem(key){
   const d = window.__pedidoDraft;
   d[group] = d[group].filter(i=>i.id!==id);
   renderPedidoItens();
+}
+/* Observação individual de cada item (produto/serviço/pacote) do pedido —
+   guardada em item.obs e exibida tanto no próprio pedido quanto no
+   Documento/Recibo gerado. */
+function openItemObsModal(key){
+  const [group,id] = key.split(':');
+  const d = window.__pedidoDraft;
+  const item = d[group].find(i=>i.id===id);
+  if(!item) return;
+  const info = resolvedItem(group, item);
+  const ov = openModal({
+    title:'Observação — '+info.nome,
+    body:
+      '<div class="field"><label>Observação deste item</label><textarea id="io-obs" placeholder="Ex: Cor rosa, sem bolinhas, entregar montado...">'+escapeHtml(item.obs||'')+'</textarea></div>',
+    foot:(item.obs? '<button class="btn btn-danger" id="io-del">'+ic('trash',16)+'</button>':'')+
+      '<button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-primary" id="io-save">'+ic('check',16)+' Salvar</button>'
+  });
+  ov.querySelector('#io-save').addEventListener('click',()=>{
+    item.obs = document.getElementById('io-obs').value.trim();
+    closeModal(ov);
+    renderPedidoItens();
+    toast('Observação salva','ok');
+  });
+  if(item.obs){
+    ov.querySelector('#io-del').addEventListener('click',()=>{
+      item.obs = '';
+      closeModal(ov);
+      renderPedidoItens();
+      toast('Observação removida','ok');
+    });
+  }
+}
+/* Quantidade de dias que o cliente vai ficar com o item (principalmente
+   para produtos de aluguel) — guardada em item.dias. O valor do item
+   passa a ser somado por dia (preço x quantidade x dias) em todo o
+   pedido, no total, no Financeiro e no Documento/Recibo. */
+function openItemDiasModal(key){
+  const [group,id] = key.split(':');
+  const d = window.__pedidoDraft;
+  const item = d[group].find(i=>i.id===id);
+  if(!item) return;
+  const info = resolvedItem(group, item);
+  const diasAtual = itemDias(item);
+  const ov = openModal({
+    title:'Dias — '+info.nome,
+    body:
+      '<div class="field"><label>Quantos dias a cliente vai ficar com este item?</label><input type="number" min="1" step="1" id="io-dias" value="'+diasAtual+'" placeholder="1"></div>'+
+      '<div class="field-hint" style="margin-top:-8px">O valor do item é somado por dia: preço × quantidade × dias.</div>',
+    foot:(diasAtual>1? '<button class="btn btn-danger" id="io-dias-del">'+ic('trash',16)+'</button>':'')+
+      '<button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-primary" id="io-dias-save">'+ic('check',16)+' Salvar</button>'
+  });
+  ov.querySelector('#io-dias-save').addEventListener('click',()=>{
+    const n = Math.max(1, Math.round(Number(document.getElementById('io-dias').value))||1);
+    item.dias = n;
+    closeModal(ov);
+    renderPedidoItens();
+    toast('Dias salvos','ok');
+  });
+  if(diasAtual>1){
+    ov.querySelector('#io-dias-del').addEventListener('click',()=>{
+      item.dias = 1;
+      closeModal(ov);
+      renderPedidoItens();
+      toast('Dias removidos','ok');
+    });
+  }
 }
 function refreshPedidoClienteSelect(selectedId){
   const sel = document.getElementById('pf-cliente');
@@ -2023,7 +2222,8 @@ function bindPedidoForm(id){
       tipoOutro: document.getElementById('pf-ev-tipo-outro').value.trim(),
       horario: document.getElementById('pf-ev-horario').value,
       endereco: document.getElementById('pf-ev-endereco').value.trim(),
-      imagemInspiracao: d.evento.imagemInspiracao || ''
+      imagemInspiracao: d.evento.imagemInspiracao || '',
+      taxaEntrega: Math.max(Number(d.evento.taxaEntrega)||0, 0)
     };
     d.desconto = Number(document.getElementById('pf-desconto').value)||0;
     d.pagamentos = d.pagamentos || [];
@@ -2066,7 +2266,7 @@ function openPickerModal(group){
     const cid = btn.dataset.pick;
     if(!d[group].some(i=>i.id===cid)){
       const c = catalog.find(x=>x.id===cid);
-      d[group].push({id:cid, qtd:1, desconto:0, preco:(c?Number(c.preco)||0:0), nome:(c?c.nome:''), unidade:(c?(c.unidade||''):'')});
+      d[group].push({id:cid, qtd:1, desconto:0, obs:'', dias:1, preco:(c?Number(c.preco)||0:0), nome:(c?c.nome:''), unidade:(c?(c.unidade||''):'')});
       btn.textContent='Adicionado'; btn.className='btn btn-sm btn-dark'; renderPedidoItens();
     }
   }));
@@ -2252,18 +2452,39 @@ function openClienteFormModal(id, onSaved){
       '<div class="field"><label>E-mail</label><input type="email" id="cl-email" value="'+escapeHtml(c?c.email:'')+'" placeholder="email@exemplo.com"></div>'+
       '<div class="field"><label>Endereço</label><input type="text" id="cl-end" value="'+escapeHtml(c?c.endereco:'')+'" placeholder="Rua, número, bairro, cidade"></div>'+
       '<div class="field"><label>Observações / info. adicional</label><textarea id="cl-info" placeholder="Data de aniversário, preferências, CPF...">'+escapeHtml(c?c.info:'')+'</textarea></div>'+
-      (c? ('<div class="divider"></div><div class="section-title" style="margin-top:0">'+ic('tag',15)+' Pedidos deste cliente ('+pedidosDoCliente.length+')</div>'+
-        (pedidosDoCliente.length? pedidosDoCliente.slice(0,4).map(p=>'<div class="row-link"><span class="l">Pedido #'+String(p.numero).padStart(5,'0')+'</span><span class="r badge '+statusClass(p.status)+'">'+statusLabel(p.status)+'</span></div>').join(''):'<p class="muted" style="font-size:13px">Nenhum pedido ainda.</p>')
+      (c? ('<div class="divider"></div><div class="section-title" style="margin-top:0">'+ic('tag',15)+' Histórico com este cliente ('+pedidosDoCliente.length+')</div>'+
+        historicoPedidosHtml(pedidosDoCliente)
       ) : ''),
     foot: (c? '<button class="btn btn-danger" id="cl-del">'+ic('trash',16)+'</button>':'') +
       '<button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-primary" id="cl-save">'+ic('check',16)+' Salvar</button>'
   });
   ov.querySelector('#cl-whats-btn').addEventListener('click',()=>{ const t=document.getElementById('cl-tel').value; if(onlyDigits(t)) window.open(waLink(t,'Olá! Aqui é da Celia Decorações 🎈'),'_blank'); else toast('Informe um telefone','err'); });
   ov.querySelector('#cl-call-btn').addEventListener('click',()=>{ const t=document.getElementById('cl-tel').value; if(onlyDigits(t)) window.location.href=telLink(t); else toast('Informe um telefone','err'); });
+  if(c) bindHistoricoPedidos(ov);
   ov.querySelector('#cl-save').addEventListener('click', async ()=>{
     const nome = document.getElementById('cl-nome').value.trim();
     if(!nome){ toast('Informe o nome do cliente','err'); return; }
-    const obj = { id: c?c.id:nextId(), nome, telefone:document.getElementById('cl-tel').value.trim(), email:document.getElementById('cl-email').value.trim(), endereco:document.getElementById('cl-end').value.trim(), info:document.getElementById('cl-info').value.trim() };
+    const telefone = document.getElementById('cl-tel').value.trim();
+    /* Ao CADASTRAR um cliente novo (não ao editar um já existente), avisa
+       se já existe alguém salvo com o mesmo nome ou telefone, para evitar
+       clientes duplicados sem querer. Quem decide se segue mesmo assim é
+       sempre a pessoa usando o app. */
+    if(!c){
+      const nomeNorm = nome.toLowerCase();
+      const telDigits = onlyDigits(telefone);
+      const duplicado = DB.clientes.find(x=>{
+        const nomeIgual = (x.nome||'').trim().toLowerCase()===nomeNorm;
+        const telIgual = telDigits && onlyDigits(x.telefone)===telDigits;
+        return nomeIgual || telIgual;
+      });
+      if(duplicado){
+        const nomeIgual = (duplicado.nome||'').trim().toLowerCase()===nomeNorm;
+        const motivo = nomeIgual? 'esse mesmo nome' : 'esse mesmo telefone';
+        const ok = await confirmDialog('Já existe um cliente cadastrado com '+motivo+': "'+duplicado.nome+'". Deseja salvar mesmo assim?', 'Salvar mesmo assim');
+        if(!ok) return;
+      }
+    }
+    const obj = { id: c?c.id:nextId(), nome, telefone, email:document.getElementById('cl-email').value.trim(), endereco:document.getElementById('cl-end').value.trim(), info:document.getElementById('cl-info').value.trim() };
     if(c){ Object.assign(c,obj); } else { DB.clientes.push(obj); }
     await dbSave();
     closeModal(ov);
@@ -2326,14 +2547,15 @@ function openEmpresaTercFormModal(id, onSaved){
       '<div class="field"><label>Endereço</label><input type="text" id="et-end" value="'+escapeHtml(e?e.endereco:'')+'" placeholder="Rua, número, bairro, cidade"></div>'+
       '<div class="field"><label>Itens/serviços que costuma prestar</label><textarea id="et-itens" placeholder="Ex: Buffet completo, bolo, docinhos...">'+escapeHtml(e?e.itens:'')+'</textarea></div>'+
       '<div class="field"><label>Observações / info. adicional</label><textarea id="et-info" placeholder="Contato do responsável, condições de pagamento...">'+escapeHtml(e?e.info:'')+'</textarea></div>'+
-      (e? ('<div class="divider"></div><div class="section-title" style="margin-top:0">'+ic('tag',15)+' Pedidos com esta empresa ('+pedidosComEmpresa.length+')</div>'+
-        (pedidosComEmpresa.length? pedidosComEmpresa.slice(0,4).map(p=>'<div class="row-link"><span class="l">Pedido #'+String(p.numero).padStart(5,'0')+'</span><span class="r badge '+statusClass(p.status)+'">'+statusLabel(p.status)+'</span></div>').join(''):'<p class="muted" style="font-size:13px">Nenhum pedido ainda.</p>')
+      (e? ('<div class="divider"></div><div class="section-title" style="margin-top:0">'+ic('tag',15)+' Histórico com esta empresa ('+pedidosComEmpresa.length+')</div>'+
+        historicoPedidosHtml(pedidosComEmpresa)
       ) : ''),
     foot: (e? '<button class="btn btn-danger" id="et-del">'+ic('trash',16)+'</button>':'') +
       '<button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-primary" id="et-save">'+ic('check',16)+' Salvar</button>'
   });
   ov.querySelector('#et-whats-btn').addEventListener('click',()=>{ const t=document.getElementById('et-tel').value; if(onlyDigits(t)) window.open(waLink(t,'Olá! Aqui é da Celia Decorações 🎈'),'_blank'); else toast('Informe um telefone','err'); });
   ov.querySelector('#et-call-btn').addEventListener('click',()=>{ const t=document.getElementById('et-tel').value; if(onlyDigits(t)) window.location.href=telLink(t); else toast('Informe um telefone','err'); });
+  if(e) bindHistoricoPedidos(ov);
   ov.querySelector('#et-save').addEventListener('click', async ()=>{
     const nome = document.getElementById('et-nome').value.trim();
     if(!nome){ toast('Informe o nome da empresa','err'); return; }
@@ -2490,8 +2712,8 @@ function finNavigate(dir){
    de forma que a soma das duas partes sempre bata com pedidoTotal(p). */
 function pedidoValoresPorBucket(p){
   let brutoProprio=0, descProprio=0, brutoTerc=0;
-  (p.produtos||[]).forEach(i=>{ const b=resolvedItem('produtos',i).preco*i.qtd; const d=Math.min(Number(i.desconto)||0,b); brutoProprio+=b; descProprio+=d; });
-  (p.servicos||[]).forEach(i=>{ const b=resolvedItem('servicos',i).preco*i.qtd; const d=Math.min(Number(i.desconto)||0,b); brutoProprio+=b; descProprio+=d; });
+  (p.produtos||[]).forEach(i=>{ const b=itemBruto('produtos',i); const d=Math.min(Number(i.desconto)||0,b); brutoProprio+=b; descProprio+=d; });
+  (p.servicos||[]).forEach(i=>{ const b=itemBruto('servicos',i); const d=Math.min(Number(i.desconto)||0,b); brutoProprio+=b; descProprio+=d; });
   (p.terceirizados||[]).forEach(t=>{ brutoTerc += tercTotal(t); });
   brutoProprio += pedidoTaxaEntrega(p);
   const liquidoProprio = brutoProprio - descProprio;
@@ -2508,8 +2730,8 @@ function pedidoValoresPorBucket(p){
 function finBreakdownProprio(pedidos){
   const map = {};
   pedidos.forEach(p=>{
-    (p.produtos||[]).forEach(i=>{ const info=resolvedItem('produtos',i); const b=info.preco*i.qtd; const d=Math.min(Number(i.desconto)||0,b); map[info.nome]=(map[info.nome]||0)+(b-d); });
-    (p.servicos||[]).forEach(i=>{ const info=resolvedItem('servicos',i); const b=info.preco*i.qtd; const d=Math.min(Number(i.desconto)||0,b); map[info.nome]=(map[info.nome]||0)+(b-d); });
+    (p.produtos||[]).forEach(i=>{ const info=resolvedItem('produtos',i); const b=itemBruto('produtos',i); const d=Math.min(Number(i.desconto)||0,b); map[info.nome]=(map[info.nome]||0)+(b-d); });
+    (p.servicos||[]).forEach(i=>{ const info=resolvedItem('servicos',i); const b=itemBruto('servicos',i); const d=Math.min(Number(i.desconto)||0,b); map[info.nome]=(map[info.nome]||0)+(b-d); });
     const taxa = pedidoTaxaEntrega(p);
     if(taxa>0){ map['Taxa de Entrega']=(map['Taxa de Entrega']||0)+taxa; }
   });
@@ -2741,7 +2963,8 @@ function openDespesaTagPicker(){
     title:'Nova despesa', center:true,
     body:'<p style="font-size:13px;color:var(--text-soft);margin:-4px 0 14px">Toque numa categoria para começar</p>'+
       '<div class="tag-grid">'+
-        DESPESA_TAGS.map(t=>'<button type="button" class="tag-pick" data-tag-pick="'+t.id+'" style="--tag-color:'+t.color+';--tag-bg:'+t.bg+'"><span class="tag-emoji">'+t.emoji+'</span><span class="tag-label">'+t.label+'</span></button>').join('')+
+        allDespesaTags().map(t=>'<button type="button" class="tag-pick" data-tag-pick="'+t.id+'" style="--tag-color:'+t.color+';--tag-bg:'+t.bg+'"><span class="tag-emoji">'+t.emoji+'</span><span class="tag-label">'+escapeHtml(t.label)+'</span></button>').join('')+
+        '<button type="button" class="tag-pick tag-add" id="dp-nova-etiqueta"><span class="tag-emoji">'+ic('plus',20)+'</span><span class="tag-label">+ Emojis</span></button>'+
       '</div>'
   });
   ov.querySelectorAll('[data-tag-pick]').forEach(btn=>btn.addEventListener('click', ()=>{
@@ -2749,13 +2972,53 @@ function openDespesaTagPicker(){
     closeModal(ov);
     openDespesaModal(null, tag);
   }));
+  ov.querySelector('#dp-nova-etiqueta').addEventListener('click', ()=>{
+    openNovaEtiquetaModal((novaTag)=>{
+      closeModal(ov);
+      openDespesaModal(null, novaTag.id);
+    });
+  });
+}
+/* Modal "+ Emojis": permite escolher um dos 20 emojis extras e dar um
+   nome novo à etiqueta, criando uma categoria de despesa personalizada
+   (guardada em DB.despesaTagsCustom, ao lado das 8 categorias fixas do
+   app, que continuam exatamente como estão). */
+function openNovaEtiquetaModal(onCreated){
+  let emojiEscolhido = '';
+  const ov = openModal({
+    title:'Nova etiqueta de despesa',
+    body:
+      '<div class="field"><label>Escolha um emoji</label><div class="emoji-pick-grid" id="ne-emoji-grid">'+
+        DESPESA_EMOJIS_EXTRA.map(em=>'<button type="button" class="emoji-pick" data-emoji-pick="'+em+'">'+em+'</button>').join('')+
+      '</div></div>'+
+      '<div class="field"><label>Nome da etiqueta</label><input type="text" id="ne-nome" placeholder="Ex: Transporte, Uniformes, Manutenção..."></div>',
+    foot:'<button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-primary" id="ne-save">'+ic('check',16)+' Criar etiqueta</button>'
+  });
+  ov.querySelectorAll('[data-emoji-pick]').forEach(btn=>btn.addEventListener('click', ()=>{
+    emojiEscolhido = btn.dataset.emojiPick;
+    ov.querySelectorAll('[data-emoji-pick]').forEach(b=>b.classList.toggle('active', b===btn));
+  }));
+  ov.querySelector('#ne-save').addEventListener('click', async ()=>{
+    const nome = document.getElementById('ne-nome').value.trim();
+    if(!emojiEscolhido){ toast('Escolha um emoji para a etiqueta','err'); return; }
+    if(!nome){ toast('Dê um nome para a etiqueta','err'); return; }
+    DB.despesaTagsCustom = DB.despesaTagsCustom || [];
+    const cor = DESPESA_COLOR_PALETTE[DB.despesaTagsCustom.length % DESPESA_COLOR_PALETTE.length];
+    const novaTag = {id:nextId(), label:nome, emoji:emojiEscolhido, color:cor.color, bg:cor.bg};
+    DB.despesaTagsCustom.push(novaTag);
+    await dbSave();
+    closeModal(ov);
+    toast('Etiqueta criada','ok');
+    if(onCreated) onCreated(novaTag);
+  });
 }
 function openDespesaModal(id, presetTag){
   const d = id? DB.despesas.find(x=>x.id===id): null;
   let tagAtual = d? (d.tag||'outros') : (presetTag||DESPESA_TAGS[0].id);
   function tagGridHtml(){
     return '<div class="tag-grid" id="de-tag-grid">'+
-      DESPESA_TAGS.map(t=>'<button type="button" class="tag-pick'+(t.id===tagAtual?' active':'')+'" data-tag-pick="'+t.id+'" style="--tag-color:'+t.color+';--tag-bg:'+t.bg+'"><span class="tag-emoji">'+t.emoji+'</span><span class="tag-label">'+t.label+'</span></button>').join('')+
+      allDespesaTags().map(t=>'<button type="button" class="tag-pick'+(t.id===tagAtual?' active':'')+'" data-tag-pick="'+t.id+'" style="--tag-color:'+t.color+';--tag-bg:'+t.bg+'"><span class="tag-emoji">'+t.emoji+'</span><span class="tag-label">'+escapeHtml(t.label)+'</span></button>').join('')+
+      '<button type="button" class="tag-pick tag-add" id="de-nova-etiqueta"><span class="tag-emoji">'+ic('plus',20)+'</span><span class="tag-label">+ Emojis</span></button>'+
     '</div>';
   }
   const ov = openModal({
@@ -2778,6 +3041,14 @@ function openDespesaModal(id, presetTag){
       const grid = document.getElementById('de-tag-grid');
       if(grid){ grid.outerHTML = tagGridHtml(); bindTagGrid(); }
     }));
+    const novaBtn = document.getElementById('de-nova-etiqueta');
+    if(novaBtn) novaBtn.addEventListener('click', ()=>{
+      openNovaEtiquetaModal((novaTag)=>{
+        tagAtual = novaTag.id;
+        const grid = document.getElementById('de-tag-grid');
+        if(grid){ grid.outerHTML = tagGridHtml(); bindTagGrid(); }
+      });
+    });
   }
   bindTagGrid();
   ov.querySelector('#de-save').addEventListener('click', async ()=>{
@@ -3028,8 +3299,8 @@ function viewDocumento(id){
   const cli = findCliente(p.clienteId);
   const cfg = DB.config;
   const itens = [];
-  (p.servicos||[]).forEach(i=>{ const info=resolvedItem('servicos',i); const b=info.preco*i.qtd; const desc=Math.min(Number(i.desconto)||0,b); itens.push({nome:info.nome, unit:info.preco, unidade:'pacote', qtd:i.qtd, desconto:desc, total:b-desc}); });
-  (p.produtos||[]).forEach(i=>{ const info=resolvedItem('produtos',i); const b=info.preco*i.qtd; const desc=Math.min(Number(i.desconto)||0,b); itens.push({nome:info.nome, unit:info.preco, unidade:info.unidade, qtd:i.qtd, desconto:desc, total:b-desc}); });
+  (p.servicos||[]).forEach(i=>{ const info=resolvedItem('servicos',i); const dias=itemDias(i); const b=itemBruto('servicos',i); const desc=Math.min(Number(i.desconto)||0,b); itens.push({nome:info.nome, unit:info.preco, unidade:(dias>1?('pacote x '+dias+'d'):'pacote'), qtd:i.qtd, desconto:desc, total:b-desc, obsItem:i.obs}); });
+  (p.produtos||[]).forEach(i=>{ const info=resolvedItem('produtos',i); const dias=itemDias(i); const b=itemBruto('produtos',i); const desc=Math.min(Number(i.desconto)||0,b); itens.push({nome:info.nome, unit:info.preco, unidade:(info.unidade||'')+(dias>1?(' x '+dias+'d'):''), qtd:i.qtd, desconto:desc, total:b-desc, obsItem:i.obs}); });
   (p.terceirizados||[]).forEach(t=>{ tercPecas(t).forEach(pc=>{ itens.push({nome:t.empresa+' — '+(pc.nome||'Peça'), unit:pc.valor, unidade:'', qtd:pc.qtd, desconto:tercPecaDesconto(pc), total:tercPecaLiquido(pc), obsItem:pc.obs}); }); });
   const taxaEntregaDoc = pedidoTaxaEntrega(p);
   if(taxaEntregaDoc>0){ itens.push({nome:'Taxa de Entrega', unit:taxaEntregaDoc, unidade:'', qtd:1, desconto:0, total:taxaEntregaDoc}); }
