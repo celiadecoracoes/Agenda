@@ -262,6 +262,35 @@ main#view{flex:1;min-width:0;padding:16px 16px calc(96px + var(--safe-b));max-wi
 .row-link .l svg{width:20px;height:20px;color:var(--pink-dark)}
 .row-link .r{color:var(--text-soft);font-size:13.5px;display:flex;align-items:center;gap:6px}
 
+/* Seletor de etiquetas (categorias) de despesa — grade de ícones bem
+   ilustrada para tornar o lançamento de contas rápido e visual. */
+.tag-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tag-pick{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  padding:16px 6px;border-radius:18px;border:1.5px solid var(--line);background:var(--tag-bg,#FFF6FA);
+  cursor:pointer;transition:transform .12s,box-shadow .12s,border-color .12s;text-align:center;
+}
+.tag-pick:hover{box-shadow:var(--shadow-s)}
+.tag-pick:active{transform:scale(.96)}
+.tag-pick .tag-emoji{
+  width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:23px;background:var(--tag-color,var(--pink));box-shadow:0 4px 10px rgba(0,0,0,.08);
+}
+.tag-pick .tag-label{font-size:11.5px;font-weight:800;color:var(--text);line-height:1.2}
+.tag-pick.active{border-color:var(--tag-color,var(--pink-dark));background:var(--tag-bg-active,#FFEAF2)}
+.tag-chip-selected{
+  display:inline-flex;align-items:center;gap:8px;padding:8px 14px 8px 8px;border-radius:999px;
+  background:var(--tag-bg,#FFF6FA);border:1.5px solid var(--line);font-weight:800;font-size:13.5px;color:var(--text);cursor:pointer;
+}
+.tag-chip-selected .tag-emoji-sm{
+  width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:15px;background:var(--tag-color,var(--pink));flex:0 0 auto;
+}
+.status-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.status-badge.pago{background:#E4F5EC;color:var(--ok)}
+.status-badge.pendente{background:#FFF1D6;color:#A5730F}
+.status-badge.vencida{background:#FBE7E7;color:var(--danger)}
+
 .divider{height:1px;background:var(--line);margin:14px 0}
 
 /* selected item chips in pedido form */
@@ -389,6 +418,7 @@ main#view{flex:1;min-width:0;padding:16px 16px calc(96px + var(--safe-b));max-wi
 .flex{display:flex}
 .gap-8{gap:8px}
 .mt-8{margin-top:8px}
+.mt-4{margin-top:4px}
 .mt-16{margin-top:16px}
 .text-center{text-align:center}
 .muted{color:var(--text-soft)}
@@ -594,6 +624,7 @@ async function attachSyncListener(){
       const data = snap.data();
       if(!data || !data.db) return;
       DB = Object.assign(defaultDB(), data.db);
+      migrarPrecosPedidos();
       try{ localStorage.setItem(DB_KEY, JSON.stringify(DB)); }catch(e){}
       /* Evita interromper uma edição em andamento: só atualiza a tela na
          hora se não houver um modal aberto nem estiver no formulário de
@@ -719,6 +750,42 @@ function findCliente(id){ return DB.clientes.find(c=>c.id===id); }
 function findProduto(id){ return DB.produtos.find(p=>p.id===id); }
 function findServico(id){ return DB.servicos.find(s=>s.id===id); }
 function findEmpresaTerc(id){ return DB.empresasTerceirizadas.find(e=>e.id===id); }
+/* --------------------------------------------------------------------
+   CONGELAMENTO DE PREÇOS NOS PEDIDOS
+   Cada item de produto/serviço dentro de um pedido guarda uma "foto"
+   do preço (e nome/unidade) do catálogo no momento em que foi
+   adicionado ao pedido (campo i.preco / i.nome / i.unidade). A partir
+   daí, editar o preço de um produto ou serviço no Estoque NUNCA muda o
+   valor de pedidos que já existem — só os pedidos criados (ou itens
+   adicionados) depois da edição usam o preço novo. Pedidos salvos antes
+   deste recurso existir são migrados automaticamente (ver
+   migrarPrecosPedidos) usando o preço vigente na primeira abertura do
+   app após a atualização, e a partir daí ficam igualmente congelados.
+   -------------------------------------------------------------------- */
+function resolvedItem(group, i){
+  const catalogItem = group==='produtos'? findProduto(i.id) : findServico(i.id);
+  const preco = (i.preco!=null && i.preco!=='') ? (Number(i.preco)||0) : (catalogItem? (Number(catalogItem.preco)||0) : 0);
+  const nome = i.nome || (catalogItem? catalogItem.nome : '(item removido do catálogo)');
+  const unidade = (i.unidade!=null && i.unidade!=='') ? i.unidade : (catalogItem? (catalogItem.unidade||'') : '');
+  return {preco, nome, unidade, catalogItem};
+}
+/* Congela (uma única vez) o preço/nome/unidade de todo item de
+   produto/serviço em todos os pedidos salvos que ainda não têm essa
+   "foto" gravada — necessário para pedidos criados antes deste recurso.
+   Sem isso, pedidos antigos continuariam buscando o preço ao vivo do
+   catálogo. Chamado sempre que o banco é carregado/recebido. */
+function migrarPrecosPedidos(){
+  let mudou = false;
+  (DB.pedidos||[]).forEach(p=>{
+    (p.produtos||[]).forEach(i=>{
+      if(i.preco==null || i.preco===''){ const pr=findProduto(i.id); i.preco = pr? (Number(pr.preco)||0) : 0; if(!i.nome && pr) i.nome = pr.nome; if((i.unidade==null||i.unidade==='') && pr) i.unidade = pr.unidade||''; mudou = true; }
+    });
+    (p.servicos||[]).forEach(i=>{
+      if(i.preco==null || i.preco===''){ const sv=findServico(i.id); i.preco = sv? (Number(sv.preco)||0) : 0; if(!i.nome && sv) i.nome = sv.nome; mudou = true; }
+    });
+  });
+  return mudou;
+}
 /* Gera um link do Google Maps que abre direto a busca pelo endereço
    informado — funciona tanto no app do Google Maps (mobile) quanto no
    navegador (desktop), sem precisar de chave de API. */
@@ -730,19 +797,31 @@ function mapsLink(endereco){ return 'https://www.google.com/maps/search/?api=1&q
    tratam os dois formatos de forma transparente em todo o app. */
 function tercPecas(t){
   if(Array.isArray(t.pecas)) return t.pecas;
-  return [{id:(t.id||'pc')+'_0', nome:t.item||'', qtd:Number(t.qtd)||0, valor:Number(t.valor)||0, obs:t.obs||''}];
+  return [{id:(t.id||'pc')+'_0', nome:t.item||'', qtd:Number(t.qtd)||0, valor:Number(t.valor)||0, obs:t.obs||'', desconto:0}];
 }
+/* Valor líquido de uma peça terceirizada (bruto da peça menos o desconto
+   dado especificamente nela, igual ao desconto por item de produtos e
+   serviços — nunca fica negativo nem desconta mais do que o próprio bruto). */
+function tercPecaBruto(pc){ return (Number(pc.qtd)||0)*(Number(pc.valor)||0); }
+function tercPecaDesconto(pc){ return Math.min(Number(pc.desconto)||0, tercPecaBruto(pc)); }
+function tercPecaLiquido(pc){ return Math.max(tercPecaBruto(pc)-tercPecaDesconto(pc),0); }
 function tercTotal(t){
-  return tercPecas(t).reduce((s,pc)=>s+(Number(pc.qtd)||0)*(Number(pc.valor)||0),0);
+  return tercPecas(t).reduce((s,pc)=>s+tercPecaLiquido(pc),0);
 }
 function tercResumoPecas(t){
   return tercPecas(t).map(pc=>pc.nome).filter(Boolean).join(', ');
 }
+/* Taxa de entrega do evento — valor fixo, definido nos Dados do Evento,
+   que entra direto na conta do pedido (não sofre desconto por item, mas
+   pode ser abatido pelo Desconto Geral, assim como qualquer outro valor
+   do pedido). */
+function pedidoTaxaEntrega(p){ return Math.max(Number(p && p.evento && p.evento.taxaEntrega)||0, 0); }
 function pedidoTotal(p){
   let bruto=0, descontoItens=0;
-  (p.produtos||[]).forEach(i=>{ const pr=findProduto(i.id); if(pr){ const b=pr.preco*i.qtd; const d=Math.min(Number(i.desconto)||0,b); bruto+=b; descontoItens+=d; } });
-  (p.servicos||[]).forEach(i=>{ const sv=findServico(i.id); if(sv){ const b=sv.preco*i.qtd; const d=Math.min(Number(i.desconto)||0,b); bruto+=b; descontoItens+=d; } });
+  (p.produtos||[]).forEach(i=>{ const b=resolvedItem('produtos',i).preco*i.qtd; const d=Math.min(Number(i.desconto)||0,b); bruto+=b; descontoItens+=d; });
+  (p.servicos||[]).forEach(i=>{ const b=resolvedItem('servicos',i).preco*i.qtd; const d=Math.min(Number(i.desconto)||0,b); bruto+=b; descontoItens+=d; });
   (p.terceirizados||[]).forEach(t=>{ bruto += tercTotal(t); });
+  bruto += pedidoTaxaEntrega(p);
   const total = (bruto - descontoItens) - (Number(p.desconto)||0);
   return Math.max(total,0);
 }
@@ -763,6 +842,18 @@ function fmtHorarioPedido(p){
   if(!p.horario) return '';
   if(p.horarioModo==='intervalo' && p.horarioFim) return p.horario+' às '+p.horarioFim;
   return p.horario;
+}
+/* Quando o pedido usa "Horário Duplo" (entrega e devolução em datas/
+   horários possivelmente diferentes — comum em aluguel de itens por
+   mais de um dia), monta uma linha de resumo pronta para exibir em
+   qualquer lugar do app. Retorna '' quando o recurso não está ativo. */
+function entregaDevolucaoAtiva(p){ return !!(p.entregaDevolucao && p.entregaDevolucao.ativo); }
+function fmtEntregaDevolucao(p){
+  const ed = p.entregaDevolucao;
+  if(!ed || !ed.ativo) return '';
+  const entrega = fmtDateBR(ed.entregaData)+(ed.entregaHora? (' às '+ed.entregaHora) : '');
+  const devolucao = fmtDateBR(ed.devolucaoData)+(ed.devolucaoHora? (' às '+ed.devolucaoHora) : '');
+  return 'Entrega: '+entrega+'  ·  Devolução: '+devolucao;
 }
 function statusLabel(s){
   return {pendente:'Pendente',andamento:'Em andamento',pagamento:'Aguardando pagamento',pago50:'Pagou 50%',concluido:'Evento concluído',finalizado:'Finalizado',cancelado:'Cancelado'}[s]||s;
@@ -1070,8 +1161,8 @@ function statusColor(s){ return {pendente:'#D4AF37',andamento:'#FF1E8E',pagament
    ====================================================================== */
 function pedidoResumoItens(p){
   const partes = [];
-  (p.produtos||[]).forEach(i=>{ const pr=findProduto(i.id); if(pr) partes.push(pr.nome+(i.qtd>1?' x'+i.qtd:'')); });
-  (p.servicos||[]).forEach(i=>{ const sv=findServico(i.id); if(sv) partes.push(sv.nome+(i.qtd>1?' x'+i.qtd:'')); });
+  (p.servicos||[]).forEach(i=>{ const nome=resolvedItem('servicos',i).nome; if(nome) partes.push(nome+(i.qtd>1?' x'+i.qtd:'')); });
+  (p.produtos||[]).forEach(i=>{ const nome=resolvedItem('produtos',i).nome; if(nome) partes.push(nome+(i.qtd>1?' x'+i.qtd:'')); });
   (p.terceirizados||[]).forEach(t=>{ if(t.empresa) partes.push(t.empresa); });
   return partes.join(' · ');
 }
@@ -1082,6 +1173,8 @@ function syncPedidoAgenda(p){
   const cli = findCliente(p.clienteId);
   const resumoEvento = eventoResumo(p);
   const titulo = resumoEvento || (cli? cli.nome : 'Compromisso');
+  const obsPartes = [pedidoResumoItens(p)];
+  if(entregaDevolucaoAtiva(p)) obsPartes.push(fmtEntregaDevolucao(p));
   let ag = DB.agenda.find(a=>a.pedidoId===p.id);
   const obj = {
     id: ag? ag.id : nextId(),
@@ -1092,7 +1185,7 @@ function syncPedidoAgenda(p){
     horaFim,
     clienteId: p.clienteId,
     status: p.status,
-    obs: pedidoResumoItens(p),
+    obs: obsPartes.filter(Boolean).join(' · '),
     endereco
   };
   if(ag){ Object.assign(ag, obj); } else { DB.agenda.push(obj); }
@@ -1334,6 +1427,20 @@ const PEDIDO_TABS = [
   {id:'finalizado', label:'Finalizado'}
 ];
 const TIPOS_EVENTO = ['','Aniversário Infantil','Aniversário Adulto','Casamento','Noivado','Chá de Bebê / Revelação','Formatura','Corporativo','Outro'];
+/* Etiquetas (categorias) de despesa — cada uma com um emoji bem
+   ilustrativo e uma cor própria, usadas na grade de seleção rápida ao
+   lançar uma nova despesa e como identidade visual na listagem. */
+const DESPESA_TAGS = [
+  {id:'mercado',        label:'Mercado',         emoji:'🛒', color:'#FF9F43', bg:'#FFF1E3'},
+  {id:'agua',           label:'Água',            emoji:'💧', color:'#2E9BFF', bg:'#E7F3FF'},
+  {id:'luz',            label:'Luz',             emoji:'💡', color:'#F0B429', bg:'#FFF7E0'},
+  {id:'internet',       label:'Internet',        emoji:'🌐', color:'#5E5CE6', bg:'#EDECFE'},
+  {id:'festa',          label:'Balão & Festa',   emoji:'🎈', color:'#FF6FA0', bg:'#FFEAF2'},
+  {id:'investimentos',  label:'Investimentos',   emoji:'📈', color:'#1E8A5A', bg:'#E4F5EC'},
+  {id:'alugueis',       label:'Aluguéis',        emoji:'🏠', color:'#B4650F', bg:'#FBEEE0'},
+  {id:'outros',         label:'Outros',          emoji:'🧾', color:'#8B8B96', bg:'#F1EFF2'}
+];
+function findDespesaTag(id){ return DESPESA_TAGS.find(t=>t.id===id) || DESPESA_TAGS[DESPESA_TAGS.length-1]; }
 function eventoResumo(p){
   const ev = p.evento; if(!ev) return '';
   const partes = [];
@@ -1424,6 +1531,7 @@ function pedidoRow(p){
     '<div class="ico">'+ic('tag',18)+'</div>'+
     '<div class="body"><div class="t1">Pedido #'+String(p.numero).padStart(5,'0')+' · '+escapeHtml(cli?cli.nome:'Cliente não definido')+'</div>'+
       '<div class="t2">'+fmtDateBR(p.data)+(horarioTxt?(' às '+horarioTxt):'')+'</div>'+
+      (entregaDevolucaoAtiva(p)? '<div class="t2" style="color:var(--pink-dark);font-weight:700">'+ic('truck',12)+' '+escapeHtml(fmtEntregaDevolucao(p))+'</div>' : '')+
       (resumo? '<div class="t2">🎈 '+escapeHtml(resumo)+'</div>' : '')+
       (p.evento && p.evento.endereco? ('<div class="evt-endereco"><span class="addr-text">'+ic('pin',12)+' '+escapeHtml(p.evento.endereco)+'</span>'+
         '<button type="button" class="maps-link" data-maps-addr="'+escapeHtml(p.evento.endereco)+'">'+ic('pin',12)+' Ver no mapa</button></div>') : '')+
@@ -1446,7 +1554,8 @@ function viewPedidoForm(id){
   const draft = p? JSON.parse(JSON.stringify(p)) : {
     id:null, numero: DB.pedidoSeq /* prévia; número definitivo é reservado ao salvar */,
     data: todayISO(), horario:'', horarioModo:'unico', horarioFim:'', clienteId:null, produtos:[], servicos:[], terceirizados:[],
-    evento:{tema:'',nome:'',idade:'',tipo:'',tipoOutro:'',horario:'',endereco:'',imagemInspiracao:''},
+    evento:{tema:'',nome:'',idade:'',tipo:'',tipoOutro:'',horario:'',endereco:'',imagemInspiracao:'',taxaEntrega:0},
+    entregaDevolucao:{ativo:false, entregaData:'', entregaHora:'', devolucaoData:'', devolucaoHora:''},
     desconto:0, pagamentos:[], obs:'', garantia:'', status:'pendente'
   };
   /* compatibilidade com pedidos salvos antes destes recursos */
@@ -1455,7 +1564,8 @@ function viewPedidoForm(id){
   draft.horarioModo = draft.horarioModo || 'unico';
   draft.horarioFim = draft.horarioFim || '';
   draft.pagamentos = draft.pagamentos || [];
-  draft.evento = Object.assign({tema:'',nome:'',idade:'',tipo:'',tipoOutro:'',horario:'',endereco:'',imagemInspiracao:''}, draft.evento||{});
+  draft.evento = Object.assign({tema:'',nome:'',idade:'',tipo:'',tipoOutro:'',horario:'',endereco:'',imagemInspiracao:'',taxaEntrega:0}, draft.evento||{});
+  draft.entregaDevolucao = Object.assign({ativo:false, entregaData:'', entregaHora:'', devolucaoData:'', devolucaoHora:''}, draft.entregaDevolucao||{});
   draft.produtos.forEach(i=>{ if(i.desconto==null) i.desconto = 0; });
   draft.servicos.forEach(i=>{ if(i.desconto==null) i.desconto = 0; });
   window.__pedidoDraft = draft;
@@ -1483,6 +1593,19 @@ function viewPedidoForm(id){
           '<div class="field"><label>De</label><input type="time" id="pf-horario-inicio" value="'+escapeHtml(draft.horarioModo==='intervalo'?draft.horario:'')+'"></div>'+
           '<div class="field"><label>Até</label><input type="time" id="pf-horario-fim" value="'+escapeHtml(draft.horarioFim)+'"></div>'+
         '</div>'+
+        '<button type="button" class="chip mt-8'+(draft.entregaDevolucao.ativo?' active':'')+'" id="pf-horario-duplo-toggle">'+ic('truck',14)+' Horário Duplo</button>'+
+        '<div class="field-hint" style="margin:4px 0 0">Use quando a entrega e a devolução do pedido acontecem em datas/horários diferentes (ex: entrega num dia, devolução no outro).</div>'+
+        '<div id="pf-horario-duplo-wrap" style="'+(draft.entregaDevolucao.ativo?'':'display:none')+'">'+
+          '<div class="divider"></div>'+
+          '<div class="field-row">'+
+            '<div class="field"><label>Entregar ao Cliente — Data</label><input type="date" id="pf-hd-entrega-data" value="'+(draft.entregaDevolucao.entregaData||draft.data)+'"></div>'+
+            '<div class="field"><label>Horário</label><input type="time" id="pf-hd-entrega-hora" value="'+escapeHtml(draft.entregaDevolucao.entregaHora||'')+'"></div>'+
+          '</div>'+
+          '<div class="field-row">'+
+            '<div class="field"><label>Devolver à Empresa — Data</label><input type="date" id="pf-hd-devolucao-data" value="'+(draft.entregaDevolucao.devolucaoData||draft.data)+'"></div>'+
+            '<div class="field"><label>Horário</label><input type="time" id="pf-hd-devolucao-hora" value="'+escapeHtml(draft.entregaDevolucao.devolucaoHora||'')+'"></div>'+
+          '</div>'+
+        '</div>'+
       '</div>'+
       '<div class="field"><label>Cliente</label><div class="input-with-actions">'+
         '<select id="pf-cliente">'+clientesOpts+'</select>'+
@@ -1507,15 +1630,16 @@ function viewPedidoForm(id){
       '<div class="field" id="pf-ev-tipo-outro-wrap" style="'+(draft.evento.tipo==='Outro'?'':'display:none')+'"><label>Especifique o tipo de evento</label><input type="text" id="pf-ev-tipo-outro" value="'+escapeHtml(draft.evento.tipoOutro)+'" placeholder="Digite o tipo de evento"></div>'+
       '<div class="field"><label>Horário do Evento</label><input type="time" id="pf-ev-horario" value="'+escapeHtml(draft.evento.horario)+'"></div>'+
       '<div class="field"><label>Endereço do Evento</label><input type="text" id="pf-ev-endereco" value="'+escapeHtml(draft.evento.endereco)+'" placeholder="Rua, número, bairro, cidade"></div>'+
+      '<div id="pf-taxa-entrega-wrap" class="mt-8"></div>'+
     '</div>'+
-
-    '<div class="section-title">'+ic('box',16)+' Produtos (aluguel)</div>'+
-    '<div class="card"><div id="pf-produtos-list"></div>'+
-      '<button class="btn btn-ghost btn-block mt-8" id="pf-add-produto">'+ic('plus',16)+' Adicionar produto</button></div>'+
 
     '<div class="section-title">'+ic('balloon',16)+' Serviços / Pacotes</div>'+
     '<div class="card"><div id="pf-servicos-list"></div>'+
       '<button class="btn btn-ghost btn-block mt-8" id="pf-add-servico">'+ic('plus',16)+' Adicionar serviço</button></div>'+
+
+    '<div class="section-title">'+ic('box',16)+' Produtos (aluguel)</div>'+
+    '<div class="card"><div id="pf-produtos-list"></div>'+
+      '<button class="btn btn-ghost btn-block mt-8" id="pf-add-produto">'+ic('plus',16)+' Adicionar produto</button></div>'+
 
     '<div class="section-title">'+ic('truck',16)+' Empresas Terceirizadas</div>'+
     '<div class="card"><div id="pf-terceirizados-list"></div>'+
@@ -1544,6 +1668,48 @@ function viewPedidoForm(id){
   '</div>'+
   '</div>';
 }
+function renderTaxaEntregaWrap(){
+  const wrap = document.getElementById('pf-taxa-entrega-wrap');
+  if(!wrap) return;
+  const d = window.__pedidoDraft;
+  const valor = Number(d.evento.taxaEntrega)||0;
+  wrap.innerHTML = '<button type="button" class="btn '+(valor>0?'btn-dark':'btn-ghost')+' btn-block" id="pf-taxa-entrega-btn">'+ic('truck',16)+' Taxa de Entrega'+(valor>0? (': '+fmtMoney(valor)) : '')+'</button>';
+  const btn = document.getElementById('pf-taxa-entrega-btn');
+  if(btn) btn.addEventListener('click', openTaxaEntregaModal);
+}
+/* Modal para definir o valor da Taxa de Entrega do evento. Esse valor
+   fica gravado em draft.evento.taxaEntrega e entra automaticamente no
+   cálculo do total do pedido (ver pedidoTaxaEntrega/pedidoTotal), sem
+   precisar ser adicionado manualmente como produto/serviço. */
+function openTaxaEntregaModal(){
+  const d = window.__pedidoDraft;
+  const valorAtual = Number(d.evento.taxaEntrega)||0;
+  const ov = openModal({
+    title:'Taxa de Entrega',
+    body:
+      '<div class="field"><label>Valor da Taxa de Entrega (R$)</label><input type="number" min="0" step="0.01" id="te-valor" value="'+(valorAtual||'')+'" placeholder="0,00"></div>'+
+      '<div class="field-hint" style="margin-top:-8px">Esse valor entra automaticamente no total do pedido.</div>',
+    foot: (valorAtual>0? '<button class="btn btn-danger" id="te-remover">'+ic('trash',16)+'</button>':'')+
+      '<button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-primary" id="te-save">'+ic('check',16)+' Salvar</button>'
+  });
+  ov.querySelector('#te-save').addEventListener('click', ()=>{
+    const v = Math.max(0, Number(document.getElementById('te-valor').value)||0);
+    d.evento.taxaEntrega = v;
+    closeModal(ov);
+    renderTaxaEntregaWrap();
+    renderPedidoTotal();
+    toast('Taxa de entrega salva','ok');
+  });
+  if(valorAtual>0){
+    ov.querySelector('#te-remover').addEventListener('click', ()=>{
+      d.evento.taxaEntrega = 0;
+      closeModal(ov);
+      renderTaxaEntregaWrap();
+      renderPedidoTotal();
+      toast('Taxa de entrega removida','ok');
+    });
+  }
+}
 function selItemRow(group, i, item){
   const bruto = item.preco*i.qtd;
   const desc = Math.min(Number(i.desconto)||0, bruto);
@@ -1563,14 +1729,12 @@ function renderPedidoItens(){
   const tWrap = document.getElementById('pf-terceirizados-list');
   if(pWrap){
     pWrap.innerHTML = d.produtos.length? d.produtos.map(i=>{
-      const pr = findProduto(i.id); if(!pr) return '';
-      return selItemRow('produtos', i, pr);
+      return selItemRow('produtos', i, resolvedItem('produtos', i));
     }).join('') : '<p class="muted" style="font-size:13px">Nenhum produto adicionado.</p>';
   }
   if(sWrap){
     sWrap.innerHTML = d.servicos.length? d.servicos.map(i=>{
-      const sv = findServico(i.id); if(!sv) return '';
-      return selItemRow('servicos', i, sv);
+      return selItemRow('servicos', i, resolvedItem('servicos', i));
     }).join('') : '<p class="muted" style="font-size:13px">Nenhum serviço adicionado.</p>';
   }
   if(tWrap){
@@ -1582,8 +1746,10 @@ function renderPedidoItens(){
           '<span class="tc-actions"><span class="tc-edit" data-tc-edit="'+idx+'">'+ic('edit',17)+'</span><span class="tc-rm" data-tc-rm="'+idx+'">'+ic('trash',17)+'</span></span></div>'+
         pecas.map(pc=>
           '<div class="tc-peca-row">'+
-            '<span class="tc-desc" style="margin-top:0">'+escapeHtml(pc.nome||'Peça sem nome')+(pc.obs? ' <span class="muted" style="font-weight:600">— '+escapeHtml(pc.obs)+'</span>':'')+'</span>'+
-            '<span class="qv" style="flex:0 0 auto">'+(pc.qtd||0)+' x '+fmtMoney(pc.valor)+'</span>'+
+            '<span class="tc-desc" style="margin-top:0">'+escapeHtml(pc.nome||'Peça sem nome')+(pc.obs? ' <span class="muted" style="font-weight:600">— '+escapeHtml(pc.obs)+'</span>':'')+
+              (tercPecaDesconto(pc)>0? '<br><small style="color:var(--pink-dark);font-weight:700">Desconto: -'+fmtMoney(tercPecaDesconto(pc))+'</small>' : '')+
+            '</span>'+
+            '<span class="qv" style="flex:0 0 auto">'+(pc.qtd||0)+' x '+fmtMoney(pc.valor)+(tercPecaDesconto(pc)>0? ' = '+fmtMoney(tercPecaLiquido(pc)) : '')+'</span>'+
           '</div>'
         ).join('')+
         '<div class="tc-meta"><span class="qv">'+pecas.length+' peça(s)</span><span class="tot">'+fmtMoney(total)+'</span></div>'+
@@ -1598,15 +1764,18 @@ function renderPedidoTotal(){
   const descontoGeral = Number(document.getElementById('pf-desconto') ? document.getElementById('pf-desconto').value : d.desconto) || 0;
   d.desconto = descontoGeral;
   let bruto = 0, descontoItens = 0;
-  d.produtos.forEach(i=>{ const pr=findProduto(i.id); if(pr){ const b=pr.preco*i.qtd; bruto+=b; descontoItens+=Math.min(Number(i.desconto)||0,b); } });
-  d.servicos.forEach(i=>{ const sv=findServico(i.id); if(sv){ const b=sv.preco*i.qtd; bruto+=b; descontoItens+=Math.min(Number(i.desconto)||0,b); } });
+  d.produtos.forEach(i=>{ const b=resolvedItem('produtos',i).preco*i.qtd; bruto+=b; descontoItens+=Math.min(Number(i.desconto)||0,b); });
+  d.servicos.forEach(i=>{ const b=resolvedItem('servicos',i).preco*i.qtd; bruto+=b; descontoItens+=Math.min(Number(i.desconto)||0,b); });
   (d.terceirizados||[]).forEach(t=>{ bruto += tercTotal(t); });
+  const taxaEntrega = Math.max(Number(d.evento.taxaEntrega)||0, 0);
+  bruto += taxaEntrega;
   const subtotal = bruto - descontoItens;
   const total = Math.max(subtotal-descontoGeral,0);
   const wrap = document.getElementById('pf-total-wrap');
   if(wrap) wrap.innerHTML = '<div class="total-box">'+
     '<div class="row"><span>Subtotal</span><span>'+fmtMoney(bruto)+'</span></div>'+
     (descontoItens>0? '<div class="row"><span>Desconto nos itens</span><span>- '+fmtMoney(descontoItens)+'</span></div>' : '')+
+    (taxaEntrega>0? '<div class="row"><span>Taxa de Entrega</span><span>'+fmtMoney(taxaEntrega)+'</span></div>' : '')+
     '<div class="row"><span>Desconto geral</span><span>- '+fmtMoney(descontoGeral)+'</span></div>'+
     '<div class="row grand"><span>Total</span><span>'+fmtMoney(total)+'</span></div>'+
   '</div>';
@@ -1737,9 +1906,7 @@ function setQtyFromInput(key,value,el){
   const n = parseInt(value,10);
   if(!isFinite(n) || n<1) return; // aguarda o usuário terminar de digitar um valor válido
   item.qtd = n;
-  const catalogItem = group==='produtos'? findProduto(id) : findServico(id);
-  if(!catalogItem) return;
-  const bruto = catalogItem.preco*item.qtd;
+  const bruto = resolvedItem(group, item).preco*item.qtd;
   const desc = Math.min(Number(item.desconto)||0, bruto);
   const row = el.closest('.sel-item');
   if(row){ const priceEl = row.querySelector('.price'); if(priceEl) priceEl.textContent = fmtMoney(Math.max(bruto-desc,0)); }
@@ -1762,9 +1929,7 @@ function changeDiscount(key,value,el){
   const d = window.__pedidoDraft;
   const item = d[group].find(i=>i.id===id);
   if(!item) return;
-  const catalogItem = group==='produtos'? findProduto(id) : findServico(id);
-  if(!catalogItem) return;
-  const bruto = catalogItem.preco*item.qtd;
+  const bruto = resolvedItem(group, item).preco*item.qtd;
   item.desconto = Math.max(0, Math.min(Number(value)||0, bruto));
   const priceEl = el && el.closest('.sel-item') ? el.closest('.sel-item').querySelector('.price') : null;
   if(priceEl) priceEl.textContent = fmtMoney(Math.max(bruto-item.desconto,0));
@@ -1784,6 +1949,7 @@ function refreshPedidoClienteSelect(selectedId){
 function bindPedidoForm(id){
   document.querySelector('[data-back]').addEventListener('click',()=>navigate('pedidos'));
   renderPedidoItens();
+  renderTaxaEntregaWrap();
   bindEvImagem();
   document.getElementById('pf-desconto').addEventListener('input', renderPedidoTotal);
   document.getElementById('pf-add-produto').addEventListener('click', ()=>openPickerModal('produtos'));
@@ -1799,6 +1965,21 @@ function bindPedidoForm(id){
     if(modo==='intervalo'){ document.getElementById('pf-horario-inicio').value = document.getElementById('pf-horario').value; }
     else{ document.getElementById('pf-horario').value = document.getElementById('pf-horario-inicio').value; }
   }));
+  document.getElementById('pf-horario-duplo-toggle').addEventListener('click', (e)=>{
+    const btn = e.currentTarget;
+    const ativoAgora = btn.classList.toggle('active');
+    const wrap = document.getElementById('pf-horario-duplo-wrap');
+    wrap.style.display = ativoAgora ? '' : 'none';
+    if(ativoAgora){
+      /* pré-preenche com a data do pedido na primeira vez que é ativado,
+         para o usuário só precisar ajustar o que for diferente. */
+      const dataPedido = document.getElementById('pf-data').value;
+      const entregaData = document.getElementById('pf-hd-entrega-data');
+      const devolucaoData = document.getElementById('pf-hd-devolucao-data');
+      if(entregaData && !entregaData.value) entregaData.value = dataPedido;
+      if(devolucaoData && !devolucaoData.value) devolucaoData.value = dataPedido;
+    }
+  });
   document.getElementById('pf-novo-cliente').addEventListener('click', ()=>{
     openClienteFormModal(null, (novoCliente)=>{
       window.__pedidoDraft.clienteId = novoCliente.id;
@@ -1826,6 +2007,14 @@ function bindPedidoForm(id){
     }
     d.clienteId = clienteId;
     d.status = document.getElementById('pf-status').value;
+    const horarioDuploAtivo = document.getElementById('pf-horario-duplo-toggle').classList.contains('active');
+    d.entregaDevolucao = {
+      ativo: horarioDuploAtivo,
+      entregaData: document.getElementById('pf-hd-entrega-data').value,
+      entregaHora: document.getElementById('pf-hd-entrega-hora').value,
+      devolucaoData: document.getElementById('pf-hd-devolucao-data').value,
+      devolucaoHora: document.getElementById('pf-hd-devolucao-hora').value
+    };
     d.evento = {
       tema: document.getElementById('pf-ev-tema').value.trim(),
       nome: document.getElementById('pf-ev-nome').value.trim(),
@@ -1875,7 +2064,11 @@ function openPickerModal(group){
   });
   ov.querySelectorAll('[data-pick]').forEach(btn=>btn.addEventListener('click',()=>{
     const cid = btn.dataset.pick;
-    if(!d[group].some(i=>i.id===cid)){ d[group].push({id:cid, qtd:1, desconto:0}); btn.textContent='Adicionado'; btn.className='btn btn-sm btn-dark'; renderPedidoItens(); }
+    if(!d[group].some(i=>i.id===cid)){
+      const c = catalog.find(x=>x.id===cid);
+      d[group].push({id:cid, qtd:1, desconto:0, preco:(c?Number(c.preco)||0:0), nome:(c?c.nome:''), unidade:(c?(c.unidade||''):'')});
+      btn.textContent='Adicionado'; btn.className='btn btn-sm btn-dark'; renderPedidoItens();
+    }
   }));
 }
 function openTerceirizadoModal(idx){
@@ -1883,7 +2076,7 @@ function openTerceirizadoModal(idx){
   const t = (idx!=null && idx>=0)? d.terceirizados[idx] : null;
   /* Estado local das peças enquanto o modal está aberto — só é gravado no
      pedido quando "Salvar" é clicado. */
-  let pecasState = t? tercPecas(t).map(pc=>({id:pc.id||nextId(), nome:pc.nome||'', qtd:(pc.qtd!=null?pc.qtd:1), valor:(pc.valor!=null?pc.valor:0), obs:pc.obs||''})) : [{id:nextId(), nome:'', qtd:1, valor:0, obs:''}];
+  let pecasState = t? tercPecas(t).map(pc=>({id:pc.id||nextId(), nome:pc.nome||'', qtd:(pc.qtd!=null?pc.qtd:1), valor:(pc.valor!=null?pc.valor:0), desconto:(pc.desconto!=null?pc.desconto:0), obs:pc.obs||''})) : [{id:nextId(), nome:'', qtd:1, valor:0, desconto:0, obs:''}];
 
   const ov = openModal({
     title: t? 'Editar empresa terceirizada' : 'Nova empresa terceirizada',
@@ -1909,19 +2102,21 @@ function openTerceirizadoModal(idx){
       const nomeEl = document.getElementById('tc-pc-nome-'+pc.id);
       const qtdEl = document.getElementById('tc-pc-qtd-'+pc.id);
       const valorEl = document.getElementById('tc-pc-valor-'+pc.id);
+      const descEl = document.getElementById('tc-pc-desconto-'+pc.id);
       const obsEl = document.getElementById('tc-pc-obs-'+pc.id);
       return {
         id: pc.id,
         nome: nomeEl? nomeEl.value : pc.nome,
         qtd: qtdEl? qtdEl.value : pc.qtd,
         valor: valorEl? valorEl.value : pc.valor,
+        desconto: descEl? descEl.value : pc.desconto,
         obs: obsEl? obsEl.value : pc.obs
       };
     });
   }
   function updateSubtotalDisplay(){
     const el = document.getElementById('tc-subtotal');
-    const subtotal = pecasState.reduce((s,pc)=> s+(Number(pc.qtd)||0)*(Number(pc.valor)||0), 0);
+    const subtotal = pecasState.reduce((s,pc)=> s+tercPecaLiquido(pc), 0);
     if(el) el.textContent = fmtMoney(subtotal);
   }
   function renderTercPecasFields(){
@@ -1936,6 +2131,7 @@ function openTerceirizadoModal(idx){
         '<div class="field-row">'+
           '<div class="field"><label>Quantidade</label><input type="number" min="1" step="1" id="tc-pc-qtd-'+pc.id+'" value="'+pc.qtd+'"></div>'+
           '<div class="field"><label>Valor da peça (R$)</label><input type="number" min="0" step="0.01" id="tc-pc-valor-'+pc.id+'" value="'+pc.valor+'"></div>'+
+          '<div class="field"><label>Desconto (R$)</label><input type="number" min="0" step="0.01" id="tc-pc-desconto-'+pc.id+'" value="'+(pc.desconto||0)+'"></div>'+
         '</div>'+
         '<div class="field"><label>Observação</label><input type="text" id="tc-pc-obs-'+pc.id+'" value="'+escapeHtml(pc.obs)+'" placeholder="Detalhes desta peça (opcional)"></div>'+
       '</div>'
@@ -1954,7 +2150,7 @@ function openTerceirizadoModal(idx){
 
   ov.querySelector('#tc-add-peca').addEventListener('click', ()=>{
     readPecasFromDom();
-    pecasState.push({id:nextId(), nome:'', qtd:1, valor:0, obs:''});
+    pecasState.push({id:nextId(), nome:'', qtd:1, valor:0, desconto:0, obs:''});
     renderTercPecasFields();
   });
 
@@ -1982,9 +2178,10 @@ function openTerceirizadoModal(idx){
     const empresaId = document.getElementById('tc-empresa-select').value;
     const empresaObj = findEmpresaTerc(empresaId);
     if(!empresaObj){ toast('Selecione a empresa terceirizada (ou cadastre uma nova pelo botão +)','err'); return; }
-    const pecasValidas = pecasState.map(pc=>({
-      id: pc.id, nome:(pc.nome||'').trim(), qtd: Math.max(1, Number(pc.qtd)||1), valor: Math.max(0, Number(pc.valor)||0), obs:(pc.obs||'').trim()
-    })).filter(pc=>pc.nome);
+    const pecasValidas = pecasState.map(pc=>{
+      const qtd = Math.max(1, Number(pc.qtd)||1), valor = Math.max(0, Number(pc.valor)||0);
+      return { id: pc.id, nome:(pc.nome||'').trim(), qtd, valor, desconto: Math.max(0, Math.min(Number(pc.desconto)||0, qtd*valor)), obs:(pc.obs||'').trim() };
+    }).filter(pc=>pc.nome);
     if(pecasValidas.length===0){ toast('Adicione ao menos uma peça com o nome preenchido','err'); return; }
     if(t){ Object.assign(t, {empresaId, empresa:empresaObj.nome, pecas:pecasValidas}); delete t.item; delete t.qtd; delete t.valor; delete t.obs; }
     else { d.terceirizados.push({id:nextId(), empresaId, empresa:empresaObj.nome, pecas:pecasValidas}); }
@@ -2293,9 +2490,10 @@ function finNavigate(dir){
    de forma que a soma das duas partes sempre bata com pedidoTotal(p). */
 function pedidoValoresPorBucket(p){
   let brutoProprio=0, descProprio=0, brutoTerc=0;
-  (p.produtos||[]).forEach(i=>{ const pr=findProduto(i.id); if(pr){ const b=pr.preco*i.qtd; const d=Math.min(Number(i.desconto)||0,b); brutoProprio+=b; descProprio+=d; } });
-  (p.servicos||[]).forEach(i=>{ const sv=findServico(i.id); if(sv){ const b=sv.preco*i.qtd; const d=Math.min(Number(i.desconto)||0,b); brutoProprio+=b; descProprio+=d; } });
+  (p.produtos||[]).forEach(i=>{ const b=resolvedItem('produtos',i).preco*i.qtd; const d=Math.min(Number(i.desconto)||0,b); brutoProprio+=b; descProprio+=d; });
+  (p.servicos||[]).forEach(i=>{ const b=resolvedItem('servicos',i).preco*i.qtd; const d=Math.min(Number(i.desconto)||0,b); brutoProprio+=b; descProprio+=d; });
   (p.terceirizados||[]).forEach(t=>{ brutoTerc += tercTotal(t); });
+  brutoProprio += pedidoTaxaEntrega(p);
   const liquidoProprio = brutoProprio - descProprio;
   const liquidoTerc = brutoTerc;
   const subtotal = liquidoProprio + liquidoTerc;
@@ -2310,8 +2508,10 @@ function pedidoValoresPorBucket(p){
 function finBreakdownProprio(pedidos){
   const map = {};
   pedidos.forEach(p=>{
-    (p.produtos||[]).forEach(i=>{ const pr=findProduto(i.id); if(pr){ const b=pr.preco*i.qtd; const d=Math.min(Number(i.desconto)||0,b); map[pr.nome]=(map[pr.nome]||0)+(b-d); } });
-    (p.servicos||[]).forEach(i=>{ const sv=findServico(i.id); if(sv){ const b=sv.preco*i.qtd; const d=Math.min(Number(i.desconto)||0,b); map[sv.nome]=(map[sv.nome]||0)+(b-d); } });
+    (p.produtos||[]).forEach(i=>{ const info=resolvedItem('produtos',i); const b=info.preco*i.qtd; const d=Math.min(Number(i.desconto)||0,b); map[info.nome]=(map[info.nome]||0)+(b-d); });
+    (p.servicos||[]).forEach(i=>{ const info=resolvedItem('servicos',i); const b=info.preco*i.qtd; const d=Math.min(Number(i.desconto)||0,b); map[info.nome]=(map[info.nome]||0)+(b-d); });
+    const taxa = pedidoTaxaEntrega(p);
+    if(taxa>0){ map['Taxa de Entrega']=(map['Taxa de Entrega']||0)+taxa; }
   });
   return Object.entries(map).sort((a,b)=>b[1]-a[1]);
 }
@@ -2350,7 +2550,7 @@ function empresaTercVendas(empresaId, empresaNome){
       const emp = resolveEmpresaTercFromItem(t);
       if(!emp || emp.id!==empresaId) return;
       tercPecas(t).forEach(pc=>{
-        vendas.push({p, t, peca:pc, total:(Number(pc.qtd)||0)*(Number(pc.valor)||0)});
+        vendas.push({p, t, peca:pc, total:tercPecaLiquido(pc)});
       });
     });
   });
@@ -2487,10 +2687,23 @@ function pagamentoRecebidoRow(pg,p){
     '<div class="end"><div class="price" style="color:var(--ok)">+ '+fmtMoney(pg.valor)+'</div></div>'+
   '</div>';
 }
+/* Situação de pagamento de uma despesa, usada para exibir o "selo"
+   (Pago / Pendente / Vencida) na listagem. */
+function despesaStatusInfo(d){
+  const venc = d.vencimento || d.data || '';
+  if(d.pago){ return {cls:'pago', label:'Pago em '+fmtDateBR(d.pago)}; }
+  if(venc && venc < todayISO()){ return {cls:'vencida', label:'Venceu em '+fmtDateBR(venc)}; }
+  return {cls:'pendente', label: venc? ('Vence em '+fmtDateBR(venc)) : 'Sem vencimento'};
+}
 function despesaRow(d){
+  const tag = findDespesaTag(d.tag);
+  const st = despesaStatusInfo(d);
   return '<div class="list-item" data-desp-id="'+d.id+'">'+
-    '<div class="ico" style="background:#FBE7E7;color:var(--danger)">'+ic('wallet',18)+'</div>'+
-    '<div class="body"><div class="t1">'+escapeHtml(d.descricao)+'</div><div class="t2">'+fmtDateBR(d.data)+'</div></div>'+
+    '<div class="ico" style="background:'+tag.bg+';font-size:19px">'+tag.emoji+'</div>'+
+    '<div class="body"><div class="t1">'+escapeHtml(d.descricao)+'</div>'+
+      '<div class="t2">'+escapeHtml(tag.label)+'</div>'+
+      '<div class="mt-4"><span class="status-badge '+st.cls+'">'+escapeHtml(st.label)+'</span></div>'+
+    '</div>'+
     '<div class="end"><div class="price" style="color:var(--danger)">- '+fmtMoney(d.valor)+'</div></div>'+
   '</div>';
 }
@@ -2517,23 +2730,62 @@ function bindFinanceiro(){
   document.querySelectorAll('[data-desp-id]').forEach(el=>el.addEventListener('click',()=>openDespesaModal(el.dataset.despId)));
   document.querySelectorAll('[data-pedido-id]').forEach(el=>el.addEventListener('click',()=>navigate('pedido-form',{id:el.dataset.pedidoId})));
   document.querySelectorAll('[data-fin-empresa-id]').forEach(el=>el.addEventListener('click',()=>navigate('empresa-terc-detalhes',{id:el.dataset.finEmpresaId})));
-  document.getElementById('fab-despesa').addEventListener('click',()=>openDespesaModal(null));
+  document.getElementById('fab-despesa').addEventListener('click',()=>openDespesaTagPicker());
 }
-function openDespesaModal(id){
+/* Grade de etiquetas (categorias) para o lançamento rápido de uma nova
+   despesa — tocar num ícone já abre o formulário com aquela categoria
+   pré-selecionada, pronta para digitar nome, valor, vencimento e
+   pagamento. */
+function openDespesaTagPicker(){
+  const ov = openModal({
+    title:'Nova despesa', center:true,
+    body:'<p style="font-size:13px;color:var(--text-soft);margin:-4px 0 14px">Toque numa categoria para começar</p>'+
+      '<div class="tag-grid">'+
+        DESPESA_TAGS.map(t=>'<button type="button" class="tag-pick" data-tag-pick="'+t.id+'" style="--tag-color:'+t.color+';--tag-bg:'+t.bg+'"><span class="tag-emoji">'+t.emoji+'</span><span class="tag-label">'+t.label+'</span></button>').join('')+
+      '</div>'
+  });
+  ov.querySelectorAll('[data-tag-pick]').forEach(btn=>btn.addEventListener('click', ()=>{
+    const tag = btn.dataset.tagPick;
+    closeModal(ov);
+    openDespesaModal(null, tag);
+  }));
+}
+function openDespesaModal(id, presetTag){
   const d = id? DB.despesas.find(x=>x.id===id): null;
+  let tagAtual = d? (d.tag||'outros') : (presetTag||DESPESA_TAGS[0].id);
+  function tagGridHtml(){
+    return '<div class="tag-grid" id="de-tag-grid">'+
+      DESPESA_TAGS.map(t=>'<button type="button" class="tag-pick'+(t.id===tagAtual?' active':'')+'" data-tag-pick="'+t.id+'" style="--tag-color:'+t.color+';--tag-bg:'+t.bg+'"><span class="tag-emoji">'+t.emoji+'</span><span class="tag-label">'+t.label+'</span></button>').join('')+
+    '</div>';
+  }
   const ov = openModal({
     title: d? 'Editar despesa':'Nova despesa',
     body:
-      '<div class="field"><label>Descrição</label><input type="text" id="de-desc" value="'+escapeHtml(d?d.descricao:'')+'" placeholder="Ex: Compra de balões, manutenção da piscina"></div>'+
-      '<div class="field-row"><div class="field"><label>Data</label><input type="date" id="de-data" value="'+(d?d.data:todayISO())+'"></div>'+
-      '<div class="field"><label>Valor (R$)</label><input type="number" min="0" step="0.01" id="de-valor" value="'+(d?d.valor:'')+'"></div></div>',
+      '<div class="field"><label>Categoria</label>'+tagGridHtml()+'</div>'+
+      '<div class="field"><label>Nome da dívida</label><input type="text" id="de-desc" value="'+escapeHtml(d?d.descricao:'')+'" placeholder="Ex: Conta de luz — Setembro"></div>'+
+      '<div class="field"><label>Valor da dívida (R$)</label><input type="number" min="0" step="0.01" id="de-valor" value="'+(d?d.valor:'')+'"></div>'+
+      '<div class="field-row">'+
+        '<div class="field"><label>Data de vencimento</label><input type="date" id="de-vencimento" value="'+(d?(d.vencimento||d.data||todayISO()):todayISO())+'"></div>'+
+        '<div class="field"><label>Data que foi paga</label><input type="date" id="de-pago" value="'+(d&&d.pago?d.pago:'')+'"></div>'+
+      '</div>'+
+      '<div class="field-hint" style="margin-top:-8px">Deixe "Data que foi paga" em branco enquanto a conta ainda não tiver sido paga.</div>',
     foot:(d?'<button class="btn btn-danger" id="de-del">'+ic('trash',16)+'</button>':'')+
       '<button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-primary" id="de-save">'+ic('check',16)+' Salvar</button>'
   });
+  function bindTagGrid(){
+    ov.querySelectorAll('[data-tag-pick]').forEach(btn=>btn.addEventListener('click', ()=>{
+      tagAtual = btn.dataset.tagPick;
+      const grid = document.getElementById('de-tag-grid');
+      if(grid){ grid.outerHTML = tagGridHtml(); bindTagGrid(); }
+    }));
+  }
+  bindTagGrid();
   ov.querySelector('#de-save').addEventListener('click', async ()=>{
     const descricao = document.getElementById('de-desc').value.trim();
-    if(!descricao){ toast('Informe a descrição','err'); return; }
-    const obj = {id:d?d.id:nextId(), descricao, data:document.getElementById('de-data').value, valor:Number(document.getElementById('de-valor').value)||0};
+    if(!descricao){ toast('Informe o nome da dívida','err'); return; }
+    const vencimento = document.getElementById('de-vencimento').value || todayISO();
+    const pago = document.getElementById('de-pago').value || '';
+    const obj = {id:d?d.id:nextId(), tag:tagAtual, descricao, valor:Number(document.getElementById('de-valor').value)||0, vencimento, pago, data:vencimento};
     if(d){Object.assign(d,obj);} else {DB.despesas.push(obj);}
     await dbSave(); closeModal(ov); renderView(); toast('Despesa salva','ok');
   });
@@ -2721,7 +2973,7 @@ function bindConfig(){
       const snap = await ref.get();
       if(snap.exists && snap.data() && snap.data().db){
         const usarNuvem = await confirmDialog('Encontramos dados salvos nesse código. Toque em "Usar dados da nuvem" para trazer esses dados para este aparelho, ou em "Cancelar" para manter os dados deste aparelho (eles substituirão os que já estavam salvos na nuvem).', 'Usar dados da nuvem');
-        if(usarNuvem){ DB = Object.assign(defaultDB(), snap.data().db); await dbSave(); }
+        if(usarNuvem){ DB = Object.assign(defaultDB(), snap.data().db); migrarPrecosPedidos(); await dbSave(); }
         else{ await ref.set({ db: DB, atualizadoEm: Date.now() }); }
       }else{
         await ref.set({ db: DB, atualizadoEm: Date.now() });
@@ -2752,7 +3004,7 @@ function bindConfig(){
     const file = e.target.files[0]; if(!file) return;
     const reader = new FileReader();
     reader.onload = async ()=>{
-      try{ const data = JSON.parse(reader.result); DB = Object.assign(defaultDB(), data); await dbSave(); render(); toast('Backup importado','ok'); }
+      try{ const data = JSON.parse(reader.result); DB = Object.assign(defaultDB(), data); migrarPrecosPedidos(); await dbSave(); render(); toast('Backup importado','ok'); }
       catch(err){ toast('Arquivo inválido','err'); }
     };
     reader.readAsText(file);
@@ -2776,9 +3028,11 @@ function viewDocumento(id){
   const cli = findCliente(p.clienteId);
   const cfg = DB.config;
   const itens = [];
-  (p.produtos||[]).forEach(i=>{ const pr=findProduto(i.id); if(pr){ const b=pr.preco*i.qtd; const desc=Math.min(Number(i.desconto)||0,b); itens.push({nome:pr.nome, unit:pr.preco, unidade:pr.unidade, qtd:i.qtd, desconto:desc, total:b-desc}); } });
-  (p.servicos||[]).forEach(i=>{ const sv=findServico(i.id); if(sv){ const b=sv.preco*i.qtd; const desc=Math.min(Number(i.desconto)||0,b); itens.push({nome:sv.nome, unit:sv.preco, unidade:'pacote', qtd:i.qtd, desconto:desc, total:b-desc}); } });
-  (p.terceirizados||[]).forEach(t=>{ tercPecas(t).forEach(pc=>{ itens.push({nome:t.empresa+' — '+(pc.nome||'Peça'), unit:pc.valor, unidade:'', qtd:pc.qtd, desconto:0, total:(Number(pc.qtd)||0)*(Number(pc.valor)||0), obsItem:pc.obs}); }); });
+  (p.servicos||[]).forEach(i=>{ const info=resolvedItem('servicos',i); const b=info.preco*i.qtd; const desc=Math.min(Number(i.desconto)||0,b); itens.push({nome:info.nome, unit:info.preco, unidade:'pacote', qtd:i.qtd, desconto:desc, total:b-desc}); });
+  (p.produtos||[]).forEach(i=>{ const info=resolvedItem('produtos',i); const b=info.preco*i.qtd; const desc=Math.min(Number(i.desconto)||0,b); itens.push({nome:info.nome, unit:info.preco, unidade:info.unidade, qtd:i.qtd, desconto:desc, total:b-desc}); });
+  (p.terceirizados||[]).forEach(t=>{ tercPecas(t).forEach(pc=>{ itens.push({nome:t.empresa+' — '+(pc.nome||'Peça'), unit:pc.valor, unidade:'', qtd:pc.qtd, desconto:tercPecaDesconto(pc), total:tercPecaLiquido(pc), obsItem:pc.obs}); }); });
+  const taxaEntregaDoc = pedidoTaxaEntrega(p);
+  if(taxaEntregaDoc>0){ itens.push({nome:'Taxa de Entrega', unit:taxaEntregaDoc, unidade:'', qtd:1, desconto:0, total:taxaEntregaDoc}); }
   const descontoItensTotal = itens.reduce((s,i)=>s+i.desconto,0);
   const subtotal = itens.reduce((s,i)=>s+i.total,0) + descontoItensTotal;
   const total = pedidoTotal(p);
@@ -2806,6 +3060,7 @@ function viewDocumento(id){
     '<div class="rbody">'+
       '<div class="cliente"><b>'+escapeHtml(cli?cli.nome:'Cliente não definido')+'</b>'+escapeHtml(cli?(cli.telefone||cli.email||''):'')+'</div>'+
       (eventoLinha? '<div class="obs"><b>Evento:</b> '+escapeHtml(eventoLinha)+'</div>' : '')+
+      (entregaDevolucaoAtiva(p)? '<div class="obs"><b>'+ic('truck',13)+' Entrega/Devolução:</b> '+escapeHtml(fmtEntregaDevolucao(p))+'</div>' : '')+
       '<table><thead><tr><th>Item</th><th>Valor Unit.</th><th>Qtd.</th><th>Total</th></tr></thead><tbody>'+
         itens.map(i=>'<tr><td>'+escapeHtml(i.nome)+
           (i.obsItem?('<br><small style="color:var(--text-soft);font-weight:600">'+escapeHtml(i.obsItem)+'</small>'):'')+
@@ -2994,6 +3249,7 @@ function registerServiceWorker(){
   registerServiceWorker();
   const loaded = await dbLoad();
   if(loaded){ DB = Object.assign(defaultDB(), loaded); }
+  if(migrarPrecosPedidos()){ await dbSave(); }
   render();
   attachSyncListener();
 })();
