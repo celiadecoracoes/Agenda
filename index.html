@@ -202,7 +202,7 @@ main#view{flex:1;min-width:0;padding:16px 16px calc(96px + var(--safe-b));max-wi
 .list-item .bar{width:4px;align-self:stretch;border-radius:4px;flex:0 0 auto}
 .list-item .ico{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;background:#FFE9F1;color:var(--pink-dark)}
 .list-item .body{flex:1;min-width:0}
-.list-item .body .t1{font-weight:800;font-size:14.5px;color:var(--black);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.list-item .body .t1{font-weight:800;font-size:14.5px;color:var(--black);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word;line-height:1.3}
 .list-item .body .t2{font-size:12.5px;color:var(--text-soft);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .list-item .end{text-align:right;flex:0 0 auto}
 .list-item .end .price{font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--black)}
@@ -216,6 +216,11 @@ main#view{flex:1;min-width:0;padding:16px 16px calc(96px + var(--safe-b));max-wi
 .badge.concluido{background:#E3F6EC;color:#1E8A5A}
 .badge.finalizado{background:#DDF3E8;color:var(--ok)}
 .badge.cancelado{background:#F1E1E1;color:var(--danger)}
+.badge.orcamento{background:#FFF1D6;color:#A9760B}
+.badge.confirmado{background:#DCEBFF;color:#1868C9}
+.badge.pagamento_pendente{background:#FFE3EE;color:var(--pink-dark)}
+.badge.entregue{background:#EFE6FE;color:#6D28D9}
+.badge.cancelado_pago{background:#F1E1E1;color:var(--danger)}
 
 .empty{
   text-align:center;padding:44px 20px;color:var(--text-soft);
@@ -233,7 +238,9 @@ main#view{flex:1;min-width:0;padding:16px 16px calc(96px + var(--safe-b));max-wi
 .chip{
   flex:0 0 auto;padding:9px 16px;border-radius:999px;background:var(--white);border:1.5px solid var(--line);
   font-size:13px;font-weight:800;color:var(--text-soft);cursor:pointer;white-space:nowrap;
+  display:inline-flex;align-items:center;gap:6px;font-family:inherit;
 }
+.chip svg{flex:0 0 auto}
 .chip.active{background:var(--black);border-color:var(--black);color:var(--gold-2)}
 
 /* form elements */
@@ -338,6 +345,34 @@ main#view{flex:1;min-width:0;padding:16px 16px calc(96px + var(--safe-b));max-wi
 .evt-endereco{display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap}
 .evt-endereco .addr-text{font-size:12px;color:var(--text-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;display:flex;align-items:center;gap:4px}
 .evt-endereco .addr-text svg{width:12px;height:12px;flex:0 0 auto;color:var(--pink-dark)}
+.evt-ref{font-size:12px;color:var(--text-soft);margin-top:3px;display:flex;gap:4px;align-items:flex-start;line-height:1.35}
+.evt-ref b{color:var(--text);font-weight:800;flex:0 0 auto}
+.wa-mini{display:inline-flex;align-items:center;justify-content:center;gap:5px;background:#25D366;color:#fff;border:none;border-radius:999px;padding:6px 11px;font-weight:800;font-size:11.5px;margin-top:6px;cursor:pointer;white-space:nowrap;box-shadow:0 3px 10px rgba(37,211,102,.28);font-family:inherit}
+.wa-mini svg{width:14px;height:14px}
+.wa-mini:active{transform:scale(.96)}
+/* Agenda: dia selecionado com navegação por arrastar */
+.agenda-dia{touch-action:pan-y;user-select:none;-webkit-user-select:none;overflow:hidden;padding:0 6px 10px;margin:0 -6px}
+.dia-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:22px 0 4px}
+.dia-nav .arrow{flex:0 0 auto;width:40px;height:40px;border-radius:50%;border:1.5px solid var(--line);background:var(--white);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--pink-dark)}
+.dia-nav .arrow svg{width:18px;height:18px}
+.list-item .end{display:flex;flex-direction:column;align-items:flex-end;max-width:42%}
+.list-item .end .badge{text-align:right;line-height:1.25;border-radius:10px}
+.dia-label{flex:1;text-align:center;line-height:1.2}
+.dia-label b{display:block;font-family:var(--font-display);font-size:17px;color:var(--text)}
+.dia-label span{font-size:12.5px;color:var(--text-soft);font-weight:700}
+.dia-hoje{display:block;margin:0 auto 6px;font-size:11.5px;font-weight:800;color:var(--pink-dark);background:#FFE3EE;border:none;border-radius:999px;padding:4px 12px;cursor:pointer;font-family:inherit}
+.swipe-hint{text-align:center;font-size:11.5px;color:var(--text-faint);font-weight:700;margin:0 0 10px;display:none}
+@media (hover:none){.swipe-hint{display:block}}
+.agenda-dia-lista{min-height:120px;will-change:transform}
+.slide-from-right{animation:slideFromRight .24s ease}
+.slide-from-left{animation:slideFromLeft .24s ease}
+@keyframes slideFromRight{from{transform:translateX(48px);opacity:0}to{transform:none;opacity:1}}
+@keyframes slideFromLeft{from{transform:translateX(-48px);opacity:0}to{transform:none;opacity:1}}
+/* Clientes em ordem alfabética */
+.letra-grupo{font-family:var(--font-display);font-weight:800;font-size:15px;color:var(--pink-dark);margin:16px 4px 6px;display:flex;align-items:center;gap:8px}
+.letra-grupo::after{content:"";flex:1;height:1px;background:var(--line)}
+.chip .cnt{display:inline-flex;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--pink-dark);color:#fff;font-size:10.5px;align-items:center;justify-content:center;margin-left:4px}
+.chip.active .cnt{background:#fff;color:var(--pink-dark)}
 .maps-link{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:800;color:var(--pink-dark);background:#FFE3EE;padding:4px 10px;border-radius:999px;cursor:pointer;border:none;flex:0 0 auto;white-space:nowrap}
 .maps-link svg{width:12px;height:12px}
 .maps-link:active{transform:scale(.95)}
@@ -381,7 +416,7 @@ main#view{flex:1;min-width:0;padding:16px 16px calc(96px + var(--safe-b));max-wi
 
 /* toast */
 #toast-root{position:fixed;top:calc(14px + var(--safe-t));left:0;right:0;z-index:200;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
-.toast{background:var(--black);color:var(--white);padding:12px 20px;border-radius:999px;font-size:13.5px;font-weight:700;box-shadow:var(--shadow-lg);display:flex;align-items:center;gap:8px;animation:toastIn .2s ease}
+.toast{background:var(--black);color:var(--white);padding:12px 20px;border-radius:18px;max-width:min(92vw,520px);line-height:1.35;font-size:13.5px;font-weight:700;box-shadow:var(--shadow-lg);display:flex;align-items:center;gap:8px;animation:toastIn .2s ease}
 .toast.ok{background:linear-gradient(135deg,#2E9E6C,#227A54)}
 .toast.err{background:linear-gradient(135deg,#D64545,#A93131)}
 .toast svg{width:16px;height:16px}
@@ -444,6 +479,15 @@ main#view{flex:1;min-width:0;padding:16px 16px calc(96px + var(--safe-b));max-wi
 .text-center{text-align:center}
 .muted{color:var(--text-soft)}
 .hide{display:none !important}
+/* imagens carregadas sob demanda (cache local + nuvem) */
+img[data-img-ref]{background:linear-gradient(90deg,#F7E9F0 0%,#FDF3F8 50%,#F7E9F0 100%);background-size:200% 100%;animation:imgShimmer 1.2s linear infinite;min-height:60px}
+img.img-indisponivel{background:#F5EAF0;min-height:60px}
+@keyframes imgShimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+.ev-img-loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:26px 12px;border:1.5px dashed var(--line);border-radius:12px;color:var(--text-soft);font-weight:700;font-size:13.5px;background:#FFF9FC}
+.spin{width:18px;height:18px;border:2.5px solid #F6DCE9;border-top-color:var(--pink-dark);border-radius:50%;animation:spin .8s linear infinite;flex:0 0 auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.btn[disabled]{opacity:.65;pointer-events:none}
+.boot-loading{display:flex;align-items:center;justify-content:center;gap:10px;color:var(--text-soft);font-weight:700;font-size:14px}
 
 /* print */
 @media print{
@@ -601,31 +645,63 @@ function clearSyncAuthLocal(){ try{ localStorage.removeItem(SYNC_AUTH_KEY); }cat
    salvas neste aparelho, e devolve a referência do documento da agenda. */
 function ensureFirestore(cfg){
   if(fsDocRef) return fsDocRef;
+  if(typeof firebase==='undefined'){ throw Object.assign(new Error('Biblioteca do Firebase não carregou'), {code:'sem-firebase'}); }
   const firebaseConfig = {
     apiKey: cfg.apiKey,
     authDomain: cfg.authDomain || (cfg.projectId+'.firebaseapp.com'),
     projectId: cfg.projectId,
     appId: cfg.appId
   };
-  if(!fsApp){ fsApp = firebase.apps && firebase.apps.length? firebase.app() : firebase.initializeApp(firebaseConfig); }
-  fsDbInst = firebase.firestore();
+  /* Reaproveita o app já criado para ESTE projeto; se o projeto mudou em
+     Configurações, cria um app novo (antes o app antigo era reutilizado e
+     a troca de projeto não surtia efeito). */
+  let app = (firebase.apps||[]).find(a=>a && a.options && a.options.projectId===firebaseConfig.projectId && a.options.apiKey===firebaseConfig.apiKey);
+  if(!app){ app = (firebase.apps||[]).length ? firebase.initializeApp(firebaseConfig, 'celia-'+Date.now()) : firebase.initializeApp(firebaseConfig); }
+  fsApp = app;
+  fsDbInst = app.firestore();
+  if(!app.__celiaPronto){
+    app.__celiaPronto = true;
+    /* campos "undefined" faziam o Firestore RECUSAR a gravação inteira */
+    try{ fsDbInst.settings({ignoreUndefinedProperties:true}); }catch(e){}
+    /* cache offline: grava mesmo sem internet e envia sozinho quando voltar */
+    try{ fsDbInst.enablePersistence({synchronizeTabs:true}).catch(()=>{}); }catch(e){}
+  }
   fsDocRef = fsDbInst.collection('agenda_celia').doc(syncCodigoNormalizado(cfg.codigo));
   return fsDocRef;
+}
+function fsAuth(){ return fsApp ? fsApp.auth() : firebase.auth(); }
+function comTimeout(promise, ms){
+  return new Promise((resolve,reject)=>{
+    const t = setTimeout(()=>reject(Object.assign(new Error('Tempo esgotado'),{code:'timeout'})), ms);
+    promise.then(v=>{ clearTimeout(t); resolve(v); }, e=>{ clearTimeout(t); reject(e); });
+  });
 }
 /* Garante que este aparelho está autenticado no Firebase antes de ler ou
    gravar na nuvem. Usa o login (e-mail/senha) salvo localmente; se não
    houver login salvo, lança um erro específico ('sem-login') para quem
    chamou tratar (mostrando a tela de Configurações, por exemplo). */
 function ensureFirebaseAuth(cfg){
-  ensureFirestore(cfg);
-  if(firebase.auth().currentUser) return Promise.resolve(true);
+  try{ ensureFirestore(cfg); }catch(e){ return Promise.reject(e); }
+  if(fsAuth().currentUser) return Promise.resolve(true);
   if(fsAuthPromise) return fsAuthPromise;
   const auth = loadSyncAuth();
   if(!auth || !auth.email || !auth.senha){
     return Promise.reject(Object.assign(new Error('Login de sincronização não configurado'), {code:'sem-login'}));
   }
-  fsAuthPromise = firebase.auth().signInWithEmailAndPassword(auth.email, auth.senha)
-    .then(()=>{ fsAuthPromise = null; return true; })
+  const authInst = fsAuth();
+  /* espera o Firebase restaurar a sessão salva no aparelho (funciona
+     offline) antes de tentar um novo login pela internet */
+  const sessaoRestaurada = new Promise(resolve=>{
+    let feito = false;
+    const fim = u=>{ if(feito) return; feito = true; try{ unsub(); }catch(_){} resolve(u); };
+    const unsub = authInst.onAuthStateChanged(u=>fim(u), ()=>fim(null));
+    setTimeout(()=>fim(authInst.currentUser), 4000);
+  });
+  fsAuthPromise = sessaoRestaurada.then(u=>{
+      if(u && (!u.email || u.email===auth.email)) return true;
+      return authInst.signInWithEmailAndPassword(auth.email, auth.senha).then(()=>true);
+    })
+    .then(v=>{ fsAuthPromise = null; return v; })
     .catch(err=>{ fsAuthPromise = null; throw err; });
   return fsAuthPromise;
 }
@@ -640,20 +716,23 @@ async function attachSyncListener(){
     if(fsUnsub){ fsUnsub(); fsUnsub = null; }
     syncStatus = 'connecting';
     fsUnsub = ref.onSnapshot(snap=>{
-      syncStatus = 'on';
+      if(!snap.metadata.fromCache) syncStatus = 'on';
       if(!snap.exists) return;
+      /* Ignora o "eco" das próprias gravações ainda não confirmadas e
+         qualquer leitura que chegue enquanto este aparelho está enviando
+         dados — antes isso fazia o app voltar para uma versão antiga e
+         "perder" o que tinha acabado de ser salvo (inclusive fotos). */
+      if(snap.metadata.hasPendingWrites || cloudWriting) return;
       const data = snap.data();
       if(!data || !data.db) return;
+      const novoJson = JSON.stringify(data.db);
+      if(novoJson === JSON.stringify(DB)) return;
       DB = Object.assign(defaultDB(), data.db);
       migrarPrecosPedidos();
       try{ localStorage.setItem(DB_KEY, JSON.stringify(DB)); }catch(e){}
-      /* Evita interromper uma edição em andamento: só atualiza a tela na
-         hora se não houver um modal aberto nem estiver no formulário de
-         pedido (que guarda alterações não salvas). */
-      const semModalAberto = (typeof modalStack!=='undefined') && modalStack.length===0;
-      const rotaSegura = state.route !== 'pedido-form';
-      if(semModalAberto && rotaSegura && isAuthenticated()){ renderView(); }
-    }, err=>{ console.warn('sync listener error', err); syncStatus = 'error'; });
+      migrarImagensInline();
+      pedirRenderSeguro();
+    }, err=>{ console.warn('sync listener error', err); syncStatus = (err && err.code==='permission-denied')? 'error' : syncStatus; });
   }catch(e){
     syncStatus = (e && e.code==='sem-login')? 'sem-login' : 'error';
     console.warn('attachSyncListener error', e);
@@ -687,13 +766,32 @@ function nextPedidoNumero(){
   ensurePedidoSeq();
   return DB.pedidoSeq++;
 }
+const CLOUD_PENDING_KEY = 'celia_cloud_pending_v1';
+let cloudWriting = false, cloudAgain = false, envioAposBoot = false, ultimoAvisoNuvem = 0, ultimoAvisoLocal = 0;
+function lerDbLocal(){
+  try{ const raw = localStorage.getItem(DB_KEY); return raw ? JSON.parse(raw) : null; }catch(e){ return null; }
+}
+function errNuvemCode(e){ return (e && e.code) || ''; }
+function errNuvemPermanente(e){
+  const c = errNuvemCode(e);
+  return c==='sem-login' || c==='permission-denied' || c==='auth/wrong-password' || c==='auth/user-not-found' ||
+         c==='auth/invalid-credential' || c==='auth/invalid-login-credentials' || c==='invalid-argument' || c==='sem-firebase';
+}
+function statusDeErro(e){ return errNuvemCode(e)==='sem-login' ? 'sem-login' : 'error'; }
 async function dbLoad(){
+  const local = lerDbLocal();
+  const pendente = localStorage.getItem(CLOUD_PENDING_KEY)==='1';
   const syncCfg = loadSyncConfig();
   if(syncConfigValida(syncCfg)){
+    /* Este aparelho tem alterações que ainda não chegaram à nuvem
+       (salvou sem internet): usa a cópia local e envia assim que puder,
+       em vez de sobrescrever o que foi salvo aqui com a versão antiga. */
+    if(pendente && local){ envioAposBoot = true; return local; }
     try{
-      await ensureFirebaseAuth(syncCfg);
-      const ref = ensureFirestore(syncCfg);
-      const snap = await ref.get();
+      const snap = await comTimeout((async()=>{
+        await ensureFirebaseAuth(syncCfg);
+        return ensureFirestore(syncCfg).get();
+      })(), 9000);
       if(snap.exists){
         const data = snap.data();
         if(data && data.db){
@@ -703,44 +801,402 @@ async function dbLoad(){
         }
       }
       syncStatus = 'on';
-      /* código novo/vazio na nuvem: cai para os dados locais deste
-         aparelho (serão enviados para a nuvem no próximo dbSave). */
+      /* código novo/vazio na nuvem: envia os dados deste aparelho */
+      if(local) envioAposBoot = true;
     }catch(e){
-      syncStatus = (e && e.code==='sem-login')? 'sem-login' : 'error';
+      syncStatus = statusDeErro(e);
       console.warn('Falha ao carregar da nuvem, usando cópia local', e);
     }
   }
   try{
     if(hasCloud){
       const r = await window.storage.get(DB_KEY, false);
-      return r && r.value ? JSON.parse(r.value) : null;
-    }else{
-      const raw = localStorage.getItem(DB_KEY);
-      return raw ? JSON.parse(raw) : null;
+      if(r && r.value) return JSON.parse(r.value);
     }
-  }catch(e){ return null; }
+  }catch(e){}
+  return local;
+}
+function avisarErroNuvem(e){
+  const c = errNuvemCode(e);
+  if(c==='sem-login' || c==='sem-firebase') return; /* sincronização não configurada: dados ficam só no aparelho */
+  if(Date.now()-ultimoAvisoNuvem < 20000) return;
+  ultimoAvisoNuvem = Date.now();
+  if(c==='permission-denied'){ toast('A nuvem recusou a gravação (Regras do Firestore). Os dados estão salvos neste aparelho.','err'); }
+  else { toast('Sem conexão com a nuvem agora. Tudo foi salvo neste aparelho e será enviado automaticamente.','err'); }
+}
+/* Grava na nuvem SEM travar a tela. Gravações seguidas são agrupadas e
+   sempre enviam a versão mais recente dos dados, na ordem certa. */
+function agendarEnvioNuvem(){
+  const cfg = loadSyncConfig();
+  if(!syncConfigValida(cfg)) return;
+  if(cloudWriting){ cloudAgain = true; return; }
+  cloudWriting = true;
+  (async()=>{
+    try{
+      do{
+        cloudAgain = false;
+        const payload = JSON.parse(JSON.stringify(DB)); /* remove undefined/NaN */
+        const cfgAtual = loadSyncConfig();
+        if(!syncConfigValida(cfgAtual)) break;
+        await ensureFirebaseAuth(cfgAtual);
+        const ref = ensureFirestore(cfgAtual);
+        await ref.set({ db: payload, atualizadoEm: Date.now() });
+      }while(cloudAgain);
+      try{ localStorage.removeItem(CLOUD_PENDING_KEY); }catch(e){}
+      syncStatus = 'on';
+      processarFilaImagens();
+    }catch(e){
+      syncStatus = statusDeErro(e);
+      if(errNuvemPermanente(e)){ try{ localStorage.removeItem(CLOUD_PENDING_KEY); }catch(_){} }
+      console.warn('storage sync error', e);
+      avisarErroNuvem(e);
+    }finally{
+      cloudWriting = false;
+    }
+  })();
 }
 async function dbSave(){
-  try{ localStorage.setItem(DB_KEY, JSON.stringify(DB)); }catch(e){} /* cópia local sempre, funciona offline */
+  let localOk = true;
+  try{ localStorage.setItem(DB_KEY, JSON.stringify(DB)); }catch(e){ localOk = false; console.warn('localStorage cheio', e); }
+  if(!localOk && Date.now()-ultimoAvisoLocal > 15000){
+    ultimoAvisoLocal = Date.now();
+    toast('A memória deste navegador está cheia. Exporte um backup em Configurações.','err');
+  }
   const syncCfg = loadSyncConfig();
   if(syncConfigValida(syncCfg)){
-    try{
-      await ensureFirebaseAuth(syncCfg);
-      const ref = ensureFirestore(syncCfg);
-      await ref.set({ db: DB, atualizadoEm: Date.now() });
-      syncStatus = 'on';
-    }catch(e){
-      syncStatus = (e && e.code==='sem-login')? 'sem-login' : 'error';
-      console.warn('storage sync error', e);
-    }
-    return;
+    try{ localStorage.setItem(CLOUD_PENDING_KEY,'1'); }catch(e){}
+    agendarEnvioNuvem();
+    return true;
   }
   try{
     if(hasCloud){ await window.storage.set(DB_KEY, JSON.stringify(DB), false); }
   }catch(e){ console.warn('storage error', e); }
+  return localOk;
 }
 let DB = defaultDB();
 function nextId(){ return 'id' + (DB.seq++) + '_' + Math.random().toString(36).slice(2,7); }
+
+/* Atualiza (ou insere) um registro pelo id NO BANCO ATUAL. Evita perder
+   uma edição quando outro celular sincroniza enquanto o formulário está
+   aberto (o objeto antigo deixava de fazer parte do banco e a alteração
+   sumia silenciosamente). */
+function upsertPorId(lista, obj){
+  DB[lista] = DB[lista] || [];
+  const atual = DB[lista].find(x=>x.id===obj.id);
+  if(atual){ Object.assign(atual, obj); return atual; }
+  DB[lista].push(obj); return obj;
+}
+/* Clique protegido: impede duplo toque (que criava pedidos/clientes
+   repetidos) e mostra o botão travado enquanto salva. */
+function onSafeClick(el, fn){
+  if(!el) return;
+  el.addEventListener('click', async (e)=>{
+    if(el.dataset.busy==='1') return;
+    el.dataset.busy='1'; el.disabled = true;
+    try{ await fn(e); }
+    catch(err){ console.error(err); toast('Algo deu errado. Tente novamente.','err'); }
+    finally{ el.dataset.busy=''; el.disabled = false; }
+  });
+}
+/* Atualização vinda de outro aparelho: redesenha na hora se for seguro,
+   ou assim que o usuário terminar o que está editando. */
+let renderPendente = false;
+function podeRenderAgora(){
+  return (typeof modalStack!=='undefined') && modalStack.length===0 && state.route!=='pedido-form' && isAuthenticated();
+}
+function pedirRenderSeguro(){
+  if(podeRenderAgora()){ renderPendente = false; renderView(); }
+  else { renderPendente = true; }
+}
+
+/* ======================================================================
+   IMAGENS (foto de inspiração do pedido e logo)
+   PROBLEMA ANTIGO: a foto do celular (3–10 MB) era gravada inteira dentro
+   do banco. O Firestore aceita no máximo 1 MB por documento e o
+   navegador ~5 MB no total — a gravação falhava em silêncio e a foto
+   "sumia". AGORA: a foto é otimizada (≈150–400 KB), guardada no
+   IndexedDB do aparelho (sem limite prático) e enviada para a nuvem num
+   documento próprio. O pedido guarda só uma referência curta.
+   ====================================================================== */
+const IMG_PREFIX = 'imgref:';
+const IMG_QUEUE_KEY = 'celia_img_fila_v1';
+const IMG_NEGADO_KEY = 'celia_img_nuvem_negada_v1';
+const PIXEL_VAZIO = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+const imgMem = new Map();
+const imgBuscando = new Map();
+let idbPromise = null;
+function isImgRef(v){ return typeof v==='string' && v.indexOf(IMG_PREFIX)===0; }
+function imgRefId(v){ return String(v).slice(IMG_PREFIX.length); }
+function idbAbrir(){
+  if(idbPromise) return idbPromise;
+  idbPromise = new Promise((resolve,reject)=>{
+    if(!window.indexedDB){ reject(new Error('IndexedDB indisponível')); return; }
+    const req = indexedDB.open('celia_imagens_v1', 1);
+    req.onupgradeneeded = ()=>{ if(!req.result.objectStoreNames.contains('imgs')) req.result.createObjectStore('imgs'); };
+    req.onsuccess = ()=>resolve(req.result);
+    req.onerror = ()=>reject(req.error);
+    req.onblocked = ()=>reject(new Error('IndexedDB bloqueado'));
+  });
+  idbPromise.catch(()=>{ idbPromise = null; });
+  return idbPromise;
+}
+async function idbOp(modo, fn){
+  const db = await idbAbrir();
+  return new Promise((resolve,reject)=>{
+    const tx = db.transaction('imgs', modo);
+    const st = tx.objectStore('imgs');
+    let resultado;
+    const req = fn(st);
+    if(req) req.onsuccess = ()=>{ resultado = req.result; };
+    tx.oncomplete = ()=>resolve(resultado);
+    tx.onerror = ()=>reject(tx.error);
+    tx.onabort = ()=>reject(tx.error);
+  });
+}
+async function idbGetImg(id){ try{ return (await idbOp('readonly', st=>st.get(id))) || null; }catch(e){ return null; } }
+async function idbPutImg(id, data){ try{ await idbOp('readwrite', st=>st.put(data, id)); return true; }catch(e){ console.warn('idb put', e); return false; } }
+async function idbDelImg(id){ try{ await idbOp('readwrite', st=>st.delete(id)); }catch(e){} }
+function imgNuvemRef(id){
+  const cfg = loadSyncConfig();
+  if(!syncConfigValida(cfg)) return null;
+  ensureFirestore(cfg);
+  return fsDbInst.collection('agenda_celia').doc(syncCodigoNormalizado(cfg.codigo)+'__img__'+id);
+}
+/* Devolve o dataURL de uma imagem (referência, dataURL ou link). */
+function imgResolver(valor){
+  if(!valor) return Promise.resolve('');
+  if(!isImgRef(valor)) return Promise.resolve(valor);
+  const id = imgRefId(valor);
+  if(imgMem.has(id)) return Promise.resolve(imgMem.get(id));
+  if(imgBuscando.has(id)) return imgBuscando.get(id);
+  const p = (async()=>{
+    let data = await idbGetImg(id);
+    if(!data){
+      const cfg = loadSyncConfig();
+      if(syncConfigValida(cfg)){
+        await ensureFirebaseAuth(cfg);
+        const snap = await comTimeout(imgNuvemRef(id).get(), 20000);
+        if(snap.exists && snap.data() && snap.data().data){ data = snap.data().data; idbPutImg(id, data); }
+      }
+    }
+    if(!data) throw new Error('Imagem não encontrada');
+    imgMem.set(id, data);
+    return data;
+  })();
+  imgBuscando.set(id, p);
+  p.then(()=>imgBuscando.delete(id), ()=>imgBuscando.delete(id));
+  return p;
+}
+/* Atributos src (+ marcador para carregar depois) para usar dentro do HTML. */
+function imgAttrs(valor){
+  if(!valor) return 'src="'+PIXEL_VAZIO+'"';
+  if(!isImgRef(valor)) return 'src="'+escapeHtml(valor)+'"';
+  const id = imgRefId(valor);
+  if(imgMem.has(id)) return 'src="'+imgMem.get(id)+'"';
+  return 'src="'+PIXEL_VAZIO+'" data-img-ref="'+escapeHtml(valor)+'"';
+}
+function hidratarImagens(root){
+  const alvo = root || document;
+  const lista = alvo.querySelectorAll ? alvo.querySelectorAll('img[data-img-ref]') : [];
+  const promessas = [];
+  lista.forEach(img=>{
+    const ref = img.getAttribute('data-img-ref');
+    img.removeAttribute('data-img-ref');
+    img.setAttribute('data-img-carregando', ref);
+    promessas.push(imgResolver(ref).then(data=>{
+      if(img.getAttribute('data-img-carregando')===ref){ img.src = data; img.removeAttribute('data-img-carregando'); }
+    }).catch(()=>{
+      img.removeAttribute('data-img-carregando');
+      img.classList.add('img-indisponivel');
+      img.alt = 'Imagem indisponível neste aparelho (verifique a sincronização)';
+    }));
+  });
+  return Promise.all(promessas);
+}
+/* Espera todas as imagens de um elemento estarem prontas (usado no PDF). */
+async function aguardarImagens(el){
+  await hidratarImagens(el);
+  const imgs = Array.from(el.querySelectorAll('img'));
+  await Promise.all(imgs.map(im=> im.complete && im.naturalWidth ? Promise.resolve() :
+    new Promise(r=>{ im.addEventListener('load', r, {once:true}); im.addEventListener('error', r, {once:true}); setTimeout(r, 8000); })));
+}
+(function iniciarObservadorImagens(){
+  let agendado = false;
+  const obs = new MutationObserver(()=>{
+    if(agendado) return; agendado = true;
+    Promise.resolve().then(()=>{ agendado = false; hidratarImagens(document); });
+  });
+  const ligar = ()=>obs.observe(document.body, {childList:true, subtree:true});
+  if(document.body) ligar(); else document.addEventListener('DOMContentLoaded', ligar);
+})();
+function carregarBitmap(blob){
+  const viaImg = ()=>new Promise((resolve,reject)=>{
+    const url = URL.createObjectURL(blob);
+    const im = new Image();
+    im.onload = ()=>{ resolve(im); setTimeout(()=>URL.revokeObjectURL(url), 2000); };
+    im.onerror = ()=>{ URL.revokeObjectURL(url); reject(new Error('Formato de imagem não suportado')); };
+    im.src = url;
+  });
+  if(window.createImageBitmap){
+    return createImageBitmap(blob, {imageOrientation:'from-image'}).catch(()=>viaImg());
+  }
+  return viaImg();
+}
+/* Reduz a imagem (lado máximo + qualidade JPEG) até caber no tamanho alvo. */
+async function comprimirImagem(blob, opts){
+  const o = Object.assign({maxLado:1600, alvo:550000, qualidade:0.85}, opts||{});
+  const bmp = await carregarBitmap(blob);
+  const w0 = bmp.width || bmp.naturalWidth, h0 = bmp.height || bmp.naturalHeight;
+  if(!w0 || !h0) throw new Error('Imagem inválida');
+  let escala = Math.min(1, o.maxLado/Math.max(w0,h0));
+  let q = o.qualidade, dataUrl = '';
+  for(let tentativa=0; tentativa<10; tentativa++){
+    const w = Math.max(1, Math.round(w0*escala)), h = Math.max(1, Math.round(h0*escala));
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    const cx = cv.getContext('2d');
+    cx.fillStyle = '#FFFFFF'; cx.fillRect(0,0,w,h);
+    cx.imageSmoothingEnabled = true; cx.imageSmoothingQuality = 'high';
+    cx.drawImage(bmp, 0, 0, w, h);
+    dataUrl = cv.toDataURL('image/jpeg', q);
+    cv.width = cv.height = 0;
+    if(dataUrl.length <= o.alvo) break;
+    if(q > 0.6){ q = Math.max(0.6, q-0.1); } else { escala *= 0.8; }
+  }
+  if(bmp.close) try{ bmp.close(); }catch(e){}
+  if(!dataUrl || dataUrl.length < 100) throw new Error('Falha ao processar imagem');
+  return dataUrl;
+}
+function dataUrlParaBlob(dataUrl){
+  const [cab, b64] = String(dataUrl).split(',');
+  const mime = (cab.match(/data:([^;]+)/)||[])[1] || 'image/jpeg';
+  const bin = atob(b64||''); const arr = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) arr[i] = bin.charCodeAt(i);
+  return new Blob([arr], {type:mime});
+}
+function novoImgId(){ return 'img'+Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+/* Guarda uma imagem já otimizada: memória + IndexedDB. Retorna a referência. */
+async function imgGuardar(dataUrl){
+  const id = novoImgId();
+  imgMem.set(id, dataUrl);
+  const ok = await idbPutImg(id, dataUrl);
+  if(!ok){
+    /* aparelho sem IndexedDB (raro): mantém uma versão reduzida no próprio banco */
+    imgMem.delete(id);
+    try{ return await comprimirImagem(dataUrlParaBlob(dataUrl), {maxLado:900, alvo:160000, qualidade:0.8}); }catch(e){ return dataUrl; }
+  }
+  return IMG_PREFIX + id;
+}
+/* Processa um arquivo escolhido pelo usuário e devolve a referência pronta. */
+async function imgDeArquivo(file, opts){
+  if(!file) throw new Error('Nenhum arquivo');
+  const tipo = (file.type||'').toLowerCase();
+  const nome = (file.name||'').toLowerCase();
+  const pareceImagem = tipo.indexOf('image/')===0 || /\.(jpe?g|png|gif|webp|heic|heif|bmp|avif)$/.test(nome);
+  if(!pareceImagem) throw Object.assign(new Error('Arquivo não é imagem'), {code:'nao-imagem'});
+  const dataUrl = await comprimirImagem(file, opts);
+  return imgGuardar(dataUrl);
+}
+function lerFilaImagens(){ try{ return JSON.parse(localStorage.getItem(IMG_QUEUE_KEY)||'[]'); }catch(e){ return []; } }
+function gravarFilaImagens(f){ try{ localStorage.setItem(IMG_QUEUE_KEY, JSON.stringify(Array.from(new Set(f)))); }catch(e){} }
+function imgEnfileirarEnvio(valor){
+  if(!isImgRef(valor)) return;
+  const f = lerFilaImagens(); f.push(imgRefId(valor)); gravarFilaImagens(f);
+  processarFilaImagens();
+}
+function refsImagensNoBanco(){
+  const m = JSON.stringify(DB).match(/imgref:[A-Za-z0-9_-]+/g) || [];
+  return Array.from(new Set(m));
+}
+/* Troca, em todo o banco, uma referência de imagem por outro valor. */
+function substituirValorImagem(de, para){
+  let mudou = false;
+  if(DB.config && DB.config.logo===de){ DB.config.logo = para; mudou = true; }
+  (DB.pedidos||[]).forEach(p=>{ if(p.evento && p.evento.imagemInspiracao===de){ p.evento.imagemInspiracao = para; mudou = true; } });
+  if(window.__pedidoDraft && window.__pedidoDraft.evento && window.__pedidoDraft.evento.imagemInspiracao===de){ window.__pedidoDraft.evento.imagemInspiracao = para; }
+  return mudou;
+}
+let processandoFila = false;
+async function processarFilaImagens(){
+  if(processandoFila) return;
+  const cfg = loadSyncConfig();
+  if(!syncConfigValida(cfg)) return;
+  let fila = lerFilaImagens();
+  if(!fila.length) return;
+  processandoFila = true;
+  let repetir = false;
+  try{
+    await ensureFirebaseAuth(cfg);
+    const naoUsadas = new Set();
+    for(const id of fila.slice()){
+      const data = imgMem.get(id) || await idbGetImg(id);
+      if(!data){ naoUsadas.add(id); continue; }
+      const ref = IMG_PREFIX+id;
+      if(localStorage.getItem(IMG_NEGADO_KEY)==='1'){
+        /* regras do Firestore não permitem documentos de imagem: guarda
+           uma versão reduzida dentro do próprio banco (plano B). */
+        const mini = await comprimirImagem(dataUrlParaBlob(data), {maxLado:900, alvo:160000, qualidade:0.8});
+        if(substituirValorImagem(ref, mini)) dbSave();
+        naoUsadas.add(id); continue;
+      }
+      try{
+        await imgNuvemRef(id).set({data, criadoEm: Date.now()});
+        naoUsadas.add(id);
+      }catch(e){
+        if(errNuvemCode(e)==='permission-denied'){ try{ localStorage.setItem(IMG_NEGADO_KEY,'1'); }catch(_){} repetir = true; break; }
+        throw e;
+      }
+    }
+    fila = lerFilaImagens().filter(id=>!naoUsadas.has(id));
+    gravarFilaImagens(fila);
+  }catch(e){
+    console.warn('fila de imagens', e);
+  }finally{
+    processandoFila = false;
+  }
+  if(repetir) return processarFilaImagens();
+}
+/* Apaga uma imagem que não é mais usada em nenhum lugar do banco. */
+function imgApagarSeOrfa(valor){
+  if(!isImgRef(valor)) return;
+  if(refsImagensNoBanco().indexOf(valor)!==-1) return;
+  if(window.__pedidoDraft && window.__pedidoDraft.evento && window.__pedidoDraft.evento.imagemInspiracao===valor) return;
+  const id = imgRefId(valor);
+  imgMem.delete(id); idbDelImg(id);
+  gravarFilaImagens(lerFilaImagens().filter(x=>x!==id));
+  const cfg = loadSyncConfig();
+  if(syncConfigValida(cfg)){
+    ensureFirebaseAuth(cfg).then(()=>imgNuvemRef(id).delete()).catch(()=>{});
+  }
+}
+/* Converte imagens antigas gravadas inteiras dentro do banco (que
+   estouravam o limite) para o novo formato otimizado. */
+let migrandoImagens = false;
+async function migrarImagensInline(){
+  if(migrandoImagens) return;
+  if(localStorage.getItem(IMG_NEGADO_KEY)==='1') return;
+  migrandoImagens = true;
+  try{
+    const alvos = [];
+    if(DB.config && typeof DB.config.logo==='string' && DB.config.logo.indexOf('data:')===0) alvos.push({valor:DB.config.logo, logo:true});
+    (DB.pedidos||[]).forEach(p=>{ const v = p.evento && p.evento.imagemInspiracao; if(typeof v==='string' && v.indexOf('data:')===0) alvos.push({valor:v}); });
+    let mudou = false;
+    for(const a of alvos){
+      try{
+        const otim = await comprimirImagem(dataUrlParaBlob(a.valor), a.logo? {maxLado:512, alvo:200000} : undefined);
+        const ref = await imgGuardar(otim);
+        if(!isImgRef(ref)) continue;
+        if(substituirValorImagem(a.valor, ref)){ mudou = true; imgEnfileirarEnvio(ref); }
+      }catch(e){ console.warn('migração de imagem', e); }
+    }
+    if(mudou){ await dbSave(); }
+  }finally{
+    migrandoImagens = false;
+  }
+}
+window.addEventListener('online', ()=>{
+  if(localStorage.getItem(CLOUD_PENDING_KEY)==='1') agendarEnvioNuvem();
+  processarFilaImagens();
+});
 
 /* seed a couple of examples so the app isn't empty on first run */
 function seedIfEmpty(){
@@ -766,7 +1222,13 @@ function todayISO(){ const d=new Date(); return d.getFullYear()+'-'+String(d.get
 function fmtDateBR(iso){ if(!iso) return '—'; const [y,m,d]=iso.split('-'); return d+'/'+m+'/'+y; }
 function fmtMonthLabel(y,m){ const meses=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro']; return meses[m]+'/'+y; }
 function onlyDigits(s){ return (s||'').replace(/\D/g,''); }
-function waLink(phone,text){ return 'https://wa.me/'+(onlyDigits(phone) ? '55'+onlyDigits(phone) : '') + (text?('?text='+encodeURIComponent(text)):''); }
+function waNumero(phone){
+  let d = onlyDigits(phone).replace(/^0+/,'');
+  if(!d) return '';
+  if(!(d.indexOf('55')===0 && d.length>=12)) d = '55'+d;
+  return d;
+}
+function waLink(phone,text){ return 'https://wa.me/'+waNumero(phone) + (text?('?text='+encodeURIComponent(text)):''); }
 function telLink(phone){ return 'tel:'+onlyDigits(phone); }
 function findCliente(id){ return DB.clientes.find(c=>c.id===id); }
 /* Resumo financeiro (quantidade de pedidos, valor total contratado,
@@ -856,11 +1318,30 @@ function migrarPrecosPedidos(){
       if(i.preco==null || i.preco===''){ const sv=findServico(i.id); i.preco = sv? (Number(sv.preco)||0) : 0; if(!i.nome && sv) i.nome = sv.nome; mudou = true; }
     });
   });
+  if(migrarStatusETipos()) mudou = true;
   return mudou;
 }
 /* Gera um link do Google Maps que abre direto a busca pelo endereço
    informado — funciona tanto no app do Google Maps (mobile) quanto no
    navegador (desktop), sem precisar de chave de API. */
+function primeiroNome(nome){ return String(nome||'').trim().split(/\s+/)[0] || ''; }
+function saudacaoWhats(cli){ return 'Olá'+(cli && cli.nome? (', '+primeiroNome(cli.nome)) : '')+'! Aqui é da '+((DB.config && DB.config.nome)||'Celia Decorações')+' 🎈'; }
+function msgWhatsPedido(p, cli){
+  const hora = fmtHorarioPedido(p);
+  return saudacaoWhats(cli)+' Estou entrando em contato sobre o seu pedido #'+String(p.numero).padStart(5,'0')+
+    (p.data? (' para o dia '+fmtDateBR(p.data)+(hora? (' às '+hora) : '')) : '')+'.';
+}
+/* Botão verde de WhatsApp nos cards de pedido (só aparece se o cliente
+   tiver telefone cadastrado). */
+function waPedidoBtnHtml(p){
+  const cli = findCliente(p.clienteId);
+  if(!cli || !onlyDigits(cli.telefone)) return '';
+  return '<button type="button" class="wa-mini" data-wa-pedido="'+p.id+'" title="Conversar com '+escapeHtml(cli.nome)+' no WhatsApp">'+ic('whats',14)+' WhatsApp</button>';
+}
+/* Linha de ponto de referência do endereço do evento. */
+function refEventoHtml(ref){
+  return ref? '<div class="evt-ref"><b>Ref.:</b><span>'+escapeHtml(ref)+'</span></div>' : '';
+}
 function mapsLink(endereco){ return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(endereco||''); }
 /* Cada empresa terceirizada de um pedido pode conter várias "peças"
    (itens/serviços com nome, quantidade, valor e observação próprios),
@@ -927,8 +1408,38 @@ function fmtEntregaDevolucao(p){
   const devolucao = fmtDateBR(ed.devolucaoData)+(ed.devolucaoHora? (' às '+ed.devolucaoHora) : '');
   return 'Entrega: '+entrega+'  ·  Devolução: '+devolucao;
 }
+/* Status dos PEDIDOS (na ordem pedida): */
+const STATUS_PEDIDO = ['orcamento','confirmado','cancelado_pago','pagamento_pendente','finalizado','entregue'];
 function statusLabel(s){
-  return {pendente:'Pendente',andamento:'Em andamento',pagamento:'Aguardando pagamento',pago50:'Pagou 50%',concluido:'Evento concluído',finalizado:'Finalizado',cancelado:'Cancelado'}[s]||s;
+  return {
+    orcamento:'Em Orçamento', confirmado:'Confirmado', cancelado_pago:'Cancelado com pagamento',
+    pagamento_pendente:'Pagamento Pendente', finalizado:'Finalizado', entregue:'Entregue',
+    /* status de compromissos avulsos da Agenda */
+    pendente:'Pendente', andamento:'Em andamento', pagamento:'Aguardando pagamento', pago50:'Pagou 50%', concluido:'Concluído', cancelado:'Cancelado'
+  }[s]||s;
+}
+function isStatusCancelado(s){ return s==='cancelado' || s==='cancelado_pago'; }
+/* Converte os status antigos dos pedidos para os novos. */
+const MAPA_STATUS_ANTIGO = {pendente:'orcamento', andamento:'confirmado', pagamento:'pagamento_pendente', pago50:'confirmado', concluido:'finalizado', cancelado:'cancelado_pago'};
+const MAPA_TIPO_ANTIGO = {
+  'Aniversário Infantil':'Festa Infantil', 'Aniversário Adulto':'Festa Adulta', 'Casamento':'Casamento/Noivado', 'Noivado':'Casamento/Noivado',
+  'Chá de Bebê / Revelação':'Chá de Fralda/Bebê', 'Corporativo':'Corporativo/Reunião', 'Outro':'Outros'
+};
+function migrarStatusETipos(){
+  let mudou = false;
+  (DB.pedidos||[]).forEach(p=>{
+    let mudouPedido = false;
+    if(!STATUS_PEDIDO.includes(p.status)){ p.status = MAPA_STATUS_ANTIGO[p.status] || 'orcamento'; mudouPedido = true; }
+    const ev = p.evento;
+    if(ev && ev.tipo && !TIPOS_EVENTO.includes(ev.tipo)){
+      const novo = MAPA_TIPO_ANTIGO[ev.tipo];
+      if(novo){ ev.tipo = novo; }
+      else { if(!ev.tipoOutro) ev.tipoOutro = ev.tipo; ev.tipo = 'Outros'; }
+      mudouPedido = true;
+    }
+    if(mudouPedido){ mudou = true; syncPedidoAgenda(p); }
+  });
+  return mudou;
 }
 /* Status que representam um evento já confirmado/travado na agenda:
    ao ser marcado, o compromisso fica salvo/consolidado, assim como
@@ -950,7 +1461,8 @@ function toast(msg, type){
   el.className = 'toast' + (type?(' '+type):'');
   el.innerHTML = (type==='ok'?ic('check',16):type==='err'?ic('x',16):'') + '<span>'+escapeHtml(msg)+'</span>';
   root.appendChild(el);
-  setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateY(-8px)'; el.style.transition='.25s'; setTimeout(()=>el.remove(),250); }, 2400);
+  const dur = Math.min(7000, Math.max(2400, String(msg||'').length*55));
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateY(-8px)'; el.style.transition='.25s'; setTimeout(()=>el.remove(),250); }, dur);
 }
 
 /* ======================================================================
@@ -978,10 +1490,13 @@ function openModal(opts){
 }
 function closeModal(overlay){
   if(!overlay) overlay = modalStack[modalStack.length-1];
-  if(!overlay) return;
+  if(!overlay || overlay.__fechando) return;
+  overlay.__fechando = true;
+  modalStack = modalStack.filter(o=>o!==overlay);
   overlay.style.opacity='0'; overlay.style.transition='.15s';
-  setTimeout(()=>{ overlay.remove(); modalStack = modalStack.filter(o=>o!==overlay); }, 150);
+  setTimeout(()=>{ overlay.remove(); if(renderPendente && podeRenderAgora()){ renderPendente=false; renderView(); } }, 160);
 }
+document.addEventListener('keydown', e=>{ if(e.key==='Escape' && modalStack.length){ closeModal(); } });
 function confirmDialog(msg, okLabel){
   return new Promise(resolve=>{
     const ov = openModal({
@@ -989,8 +1504,14 @@ function confirmDialog(msg, okLabel){
       body:'<p style="font-size:14.5px;color:#3a2c34">'+escapeHtml(msg)+'</p>',
       foot:'<button class="btn btn-ghost" data-no>Cancelar</button><button class="btn btn-danger" data-yes>'+escapeHtml(okLabel||'Excluir')+'</button>'
     });
-    ov.querySelector('[data-no]').addEventListener('click',()=>{closeModal(ov); resolve(false);});
-    ov.querySelector('[data-yes]').addEventListener('click',()=>{closeModal(ov); resolve(true);});
+    let respondido = false;
+    const responder = v=>{ if(respondido) return; respondido = true; closeModal(ov); resolve(v); };
+    ov.querySelector('[data-no]').addEventListener('click',()=>responder(false));
+    ov.querySelector('[data-yes]').addEventListener('click',()=>responder(true));
+    ov.addEventListener('click', e=>{ if(e.target===ov) responder(false); });
+    ov.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>responder(false)));
+    const obs = new MutationObserver(()=>{ if(!ov.isConnected){ obs.disconnect(); responder(false); } });
+    obs.observe(document.getElementById('modal-root'), {childList:true});
   });
 }
 
@@ -1014,6 +1535,8 @@ let state = {
   params:{},
   agendaCursor: new Date(),
   agendaSelected: todayISO(),
+  agendaAnim: '',
+  clientesAba: 'todos',
   finCursor: new Date(),
   finPeriodo: 'mes',
   finAba: 'empresa',
@@ -1025,6 +1548,7 @@ let state = {
 
 function navigate(route, params){
   state.route = route; state.params = params||{};
+  renderPendente = false;
   window.scrollTo(0,0);
   render();
 }
@@ -1176,7 +1700,7 @@ function bindLogin(){
 function viewHome(){
   const hoje = todayISO();
   const compromissosHoje = DB.agenda.filter(a=>a.data===hoje).sort((a,b)=>(a.hora||'').localeCompare(b.hora||''));
-  const contagem = {pendente:0,andamento:0,pagamento:0,pago50:0};
+  const contagem = {orcamento:0,confirmado:0,pagamento_pendente:0,entregue:0};
   DB.pedidos.forEach(p=>{ if(contagem[p.status]!==undefined) contagem[p.status]++; });
   const d = new Date();
   const saud = d.getHours()<12?'Bom dia':(d.getHours()<18?'Boa tarde':'Boa noite');
@@ -1192,10 +1716,10 @@ function viewHome(){
 
   '<div class="section-title">'+ic('tag',16)+' Pedidos em aberto</div>'+
   '<div class="card">'+
-    '<div class="stat"><span class="lbl">Pendentes</span><span class="val">'+contagem.pendente+'</span></div>'+
-    '<div class="stat"><span class="lbl">Em andamento</span><span class="val pink">'+contagem.andamento+'</span></div>'+
-    '<div class="stat"><span class="lbl">Aguardando pagamento</span><span class="val">'+contagem.pagamento+'</span></div>'+
-    '<div class="stat"><span class="lbl">Pagou 50%</span><span class="val">'+contagem.pago50+'</span></div>'+
+    '<div class="stat"><span class="lbl">Em Orçamento</span><span class="val">'+contagem.orcamento+'</span></div>'+
+    '<div class="stat"><span class="lbl">Confirmados</span><span class="val pink">'+contagem.confirmado+'</span></div>'+
+    '<div class="stat"><span class="lbl">Pagamento Pendente</span><span class="val">'+contagem.pagamento_pendente+'</span></div>'+
+    '<div class="stat"><span class="lbl">Entregues</span><span class="val">'+contagem.entregue+'</span></div>'+
   '</div>'+
 
   '<div class="section-title">'+ic('balloon',16)+' Atalhos</div>'+
@@ -1221,11 +1745,13 @@ function agendaRowHtml(a){
       (pedido? agendaTerceirizadosBlockHtml(pedido) : '')+
       (a.endereco? ('<div class="evt-endereco"><span class="addr-text">'+ic('pin',12)+' '+escapeHtml(a.endereco)+'</span>'+
         '<button type="button" class="maps-link" data-maps-addr="'+escapeHtml(a.endereco)+'">'+ic('pin',12)+' Ver no mapa</button></div>') : '')+
+      refEventoHtml(pedido? (pedido.evento && pedido.evento.referencia) : a.referencia)+
     '</div>'+
     '<span class="badge '+statusClass(a.status)+'">'+statusLabel(a.status)+'</span>'+
   '</div>';
 }
-function statusColor(s){ return {pendente:'#D4AF37',andamento:'#FF1E8E',pagamento:'#D63C77',pago50:'#B4650F',concluido:'#1E8A5A',finalizado:'#2E9E6C',cancelado:'#D64545'}[s]||'#ccc'; }
+function statusColor(s){ return {orcamento:'#D4AF37',confirmado:'#2E7BE6',cancelado_pago:'#D64545',pagamento_pendente:'#D63C77',finalizado:'#2E9E6C',entregue:'#7C3AED',
+  pendente:'#D4AF37',andamento:'#FF1E8E',pagamento:'#D63C77',pago50:'#B4650F',concluido:'#1E8A5A',cancelado:'#D64545'}[s]||'#ccc'; }
 
 /* ======================================================================
    SINCRONIZAÇÃO PEDIDOS -> AGENDA
@@ -1290,7 +1816,8 @@ function syncPedidoAgenda(p){
     clienteId: p.clienteId,
     status: p.status,
     obs: obsPartes.filter(Boolean).join(' · '),
-    endereco
+    endereco,
+    referencia: (p.evento && p.evento.referencia) || ''
   };
   if(ag){ Object.assign(ag, obj); } else { DB.agenda.push(obj); }
 }
@@ -1310,12 +1837,20 @@ function autoConcluirEventosVencidos(){
   const hoje = todayISO();
   let mudou = false;
 
+  /* Pedidos: depois que o evento (ou a devolução, no Horário Duplo)
+     passou, "Confirmado"/"Entregue" viram "Finalizado" se estiver tudo
+     pago, ou "Pagamento Pendente" se ainda faltar receber. Um pedido em
+     "Pagamento Pendente" que foi quitado vira "Finalizado". Orçamentos e
+     cancelados nunca são alterados automaticamente. */
   DB.pedidos.forEach(p=>{
-    if(p.data && p.data < hoje && !STATUS_IMUNES_AUTO_CONCLUSAO.includes(p.status)){
-      p.status = 'concluido';
-      syncPedidoAgenda(p);
-      mudou = true;
-    }
+    let fim = p.data || '';
+    if(entregaDevolucaoAtiva(p) && p.entregaDevolucao.devolucaoData && p.entregaDevolucao.devolucaoData > fim) fim = p.entregaDevolucao.devolucaoData;
+    if(!fim || fim >= hoje) return;
+    const quitado = pedidoStatusPagamento(p)==='pago' || pedidoTotal(p)<=0;
+    let novo = null;
+    if(p.status==='confirmado' || p.status==='entregue') novo = quitado? 'finalizado' : 'pagamento_pendente';
+    else if(p.status==='pagamento_pendente' && quitado) novo = 'finalizado';
+    if(novo && novo!==p.status){ p.status = novo; syncPedidoAgenda(p); mudou = true; }
   });
 
   /* compromissos da Agenda que não vieram de um Pedido (avulsos) */
@@ -1386,10 +1921,77 @@ function viewAgenda(){
       cells+
     '</div>'+
   '</div>'+
-  '<div class="section-title">'+ic('calendar',16)+' '+fmtDateBR(state.agendaSelected)+'</div>'+
-  '<div>'+ (doDia.length ? doDia.map(a=>agendaFullRow(a)).join('') :
+  '<div class="agenda-dia" id="agenda-dia">'+
+    '<div class="dia-nav">'+
+      '<button class="arrow" data-dia-prev title="Dia anterior">'+ic('back',18)+'</button>'+
+      '<div class="dia-label"><b>'+diaSemanaLabel(state.agendaSelected)+'</b><span>'+fmtDateBR(state.agendaSelected)+(doDia.length? (' · '+doDia.length+' compromisso'+(doDia.length>1?'s':'')) : '')+'</span></div>'+
+      '<button class="arrow" data-dia-next title="Próximo dia">'+ic('chevron',18)+'</button>'+
+    '</div>'+
+    (state.agendaSelected!==todayISO()? '<button type="button" class="dia-hoje" data-dia-hoje>Voltar para hoje</button>' : '')+
+    '<p class="swipe-hint">← Arraste para o lado para trocar de dia →</p>'+
+    '<div class="agenda-dia-lista'+(state.agendaAnim? (' slide-from-'+state.agendaAnim) : '')+'" id="agenda-dia-lista">'+ (doDia.length ? doDia.map(a=>agendaFullRow(a)).join('') :
       '<div class="card"><div class="empty" style="padding:14px 0">'+ic('calendar',40)+'<h4>Nenhum compromisso</h4><p>Toque no botão abaixo para agendar.</p></div></div>') +'</div>'+
+  '</div>'+
   '<div class="fab"><button class="btn btn-primary" id="fab-agenda">'+ic('plus',18)+' Agenda</button></div>';
+}
+function diaSemanaLabel(iso){
+  const [y,m,d] = String(iso||todayISO()).split('-').map(Number);
+  const dt = new Date(y, (m||1)-1, d||1);
+  const hoje = todayISO();
+  const amanha = isoFromDate(new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()+1));
+  const ontem = isoFromDate(new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()-1));
+  let semana = dt.toLocaleDateString('pt-BR',{weekday:'long'});
+  semana = semana.charAt(0).toUpperCase()+semana.slice(1);
+  if(iso===hoje) return 'Hoje · '+semana;
+  if(iso===amanha) return 'Amanhã · '+semana;
+  if(iso===ontem) return 'Ontem · '+semana;
+  return semana;
+}
+/* Troca o dia selecionado da Agenda (setas ou arrastar o dedo) e leva o
+   calendário junto quando o dia muda de mês. */
+function agendaMudarDia(delta){
+  const [y,m,d] = state.agendaSelected.split('-').map(Number);
+  const nova = new Date(y, m-1, d+delta);
+  state.agendaSelected = isoFromDate(nova);
+  state.agendaCursor = new Date(nova.getFullYear(), nova.getMonth(), 1);
+  state.agendaAnim = delta>0? 'right' : 'left';
+  renderView();
+  state.agendaAnim = '';
+}
+function bindAgendaSwipe(){
+  const zona = document.getElementById('agenda-dia');
+  const lista = document.getElementById('agenda-dia-lista');
+  if(!zona || !lista) return;
+  let x0 = null, y0 = 0, dx = 0, horizontal = null;
+  const resetar = ()=>{
+    lista.style.transition = 'transform .2s ease, opacity .2s ease';
+    lista.style.transform = ''; lista.style.opacity = '';
+  };
+  zona.addEventListener('touchstart', e=>{
+    if(e.touches.length!==1){ x0 = null; return; }
+    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; dx = 0; horizontal = null;
+    lista.style.transition = 'none';
+  }, {passive:true});
+  zona.addEventListener('touchmove', e=>{
+    if(x0===null || e.touches.length!==1) return;
+    const t = e.touches[0];
+    dx = t.clientX - x0;
+    const dy = t.clientY - y0;
+    if(horizontal===null && (Math.abs(dx)>10 || Math.abs(dy)>10)) horizontal = Math.abs(dx) > Math.abs(dy)*1.2;
+    if(horizontal){
+      lista.style.transform = 'translateX('+(dx*0.55)+'px)';
+      lista.style.opacity = String(1 - Math.min(Math.abs(dx)/700, 0.35));
+    }
+  }, {passive:true});
+  const fim = ()=>{
+    if(x0===null) return;
+    const trocar = horizontal && Math.abs(dx) > 60;
+    x0 = null;
+    if(trocar){ agendaMudarDia(dx<0? 1 : -1); }
+    else { resetar(); }
+  };
+  zona.addEventListener('touchend', fim);
+  zona.addEventListener('touchcancel', ()=>{ x0 = null; resetar(); });
 }
 function agendaHoraLabel(a){
   return a.horaFim? ((a.hora||'--:--')+' às '+a.horaFim) : (a.hora||'--:--');
@@ -1409,10 +2011,11 @@ function agendaFullRow(a){
       (pedido? agendaTerceirizadosBlockHtml(pedido) : '')+
       (a.endereco? ('<div class="evt-endereco"><span class="addr-text">'+ic('pin',12)+' '+escapeHtml(a.endereco)+'</span>'+
         '<button type="button" class="maps-link" data-maps-addr="'+escapeHtml(a.endereco)+'">'+ic('pin',12)+' Ver no mapa</button></div>') : '')+
+      refEventoHtml(pedido? (pedido.evento && pedido.evento.referencia) : a.referencia)+
       (pedido? '<div class="t2" style="color:'+(restante>0.004?'var(--danger)':'var(--ok)')+';font-weight:700">'+(restante>0.004?('Falta '+fmtMoney(restante)):'Valor Total Pago')+'</div>' : '')+
     '</div>'+
     (pedido?
-      '<div class="end"><div class="price">'+fmtMoney(pedidoTotal(pedido))+'</div><span class="badge '+statusClass(a.status)+'" style="margin-top:4px">'+statusLabel(a.status)+'</span></div>' :
+      '<div class="end"><div class="price">'+fmtMoney(pedidoTotal(pedido))+'</div><span class="badge '+statusClass(a.status)+'" style="margin-top:4px">'+statusLabel(a.status)+'</span>'+waPedidoBtnHtml(pedido)+'</div>' :
       '<span class="badge '+statusClass(a.status)+'">'+statusLabel(a.status)+'</span>')+
   '</div>';
 }
@@ -1426,17 +2029,35 @@ function bindAgenda(){
     else { openAgendaFormModal(el.dataset.agendaId); }
   }));
   document.getElementById('fab-agenda').addEventListener('click',()=>openNovoAgendaOuPedidoSheet());
+  document.querySelector('[data-dia-prev]').addEventListener('click',()=>agendaMudarDia(-1));
+  document.querySelector('[data-dia-next]').addEventListener('click',()=>agendaMudarDia(1));
+  const hojeBtn = document.querySelector('[data-dia-hoje]');
+  if(hojeBtn) hojeBtn.addEventListener('click',()=>{
+    const antes = state.agendaSelected;
+    state.agendaSelected = todayISO();
+    state.agendaCursor = new Date();
+    state.agendaAnim = todayISO() > antes ? 'right' : 'left';
+    renderView(); state.agendaAnim = '';
+  });
+  bindAgendaSwipe();
   bindMapsLinks();
 }
 /* Botões "Ver no mapa" das prévias de eventos: abrem o Google Maps já com
    o endereço certo em uma nova aba, sem disparar a navegação do item
    (cliente/pedido) em que o botão está encaixado. */
 function bindMapsLinks(){
-  document.querySelectorAll('[data-maps-addr]').forEach(el=>el.addEventListener('click',(e)=>{
+  document.querySelectorAll('[data-maps-addr]').forEach(el=>{ if(el.dataset.mapsBound) return; el.dataset.mapsBound='1'; el.addEventListener('click',(e)=>{
     e.stopPropagation();
     const endereco = el.dataset.mapsAddr;
     if(endereco) window.open(mapsLink(endereco), '_blank', 'noopener');
-  }));
+  }); });
+  document.querySelectorAll('[data-wa-pedido]').forEach(el=>{ if(el.dataset.waBound) return; el.dataset.waBound='1'; el.addEventListener('click',(e)=>{
+    e.stopPropagation();
+    const p = DB.pedidos.find(x=>x.id===el.dataset.waPedido);
+    const cli = p && findCliente(p.clienteId);
+    if(!cli || !onlyDigits(cli.telefone)){ toast('Cliente sem telefone cadastrado','err'); return; }
+    window.open(waLink(cli.telefone, msgWhatsPedido(p, cli)), '_blank');
+  }); });
 }
 /* Ao tocar em "+ Agenda", oferece as duas opções: manter o compromisso
    avulso de sempre, ou já criar direto um Novo Pedido (que continua se
@@ -1494,7 +2115,7 @@ function openAgendaFormModal(id){
     if(modo==='intervalo'){ ov.querySelector('#ag-hora-inicio').value = ov.querySelector('#ag-hora').value; }
     else{ ov.querySelector('#ag-hora').value = ov.querySelector('#ag-hora-inicio').value; }
   }));
-  ov.querySelector('#ag-save').addEventListener('click', async ()=>{
+  onSafeClick(ov.querySelector('#ag-save'), async ()=>{
     const titulo = document.getElementById('ag-titulo').value.trim();
     const data = document.getElementById('ag-data').value;
     if(!titulo || !data){ toast('Preencha título e data','err'); return; }
@@ -1508,8 +2129,10 @@ function openAgendaFormModal(id){
       status: document.getElementById('ag-status').value,
       obs: document.getElementById('ag-obs').value.trim()
     };
-    if(item){ Object.assign(item, obj); } else { DB.agenda.push(obj); }
-    await dbSave(); closeModal(ov); state.agendaSelected = data; renderView();
+    upsertPorId('agenda', obj);
+    await dbSave(); closeModal(ov); state.agendaSelected = data;
+    if(state.route==='agenda'){ const [yy,mm] = data.split('-').map(Number); state.agendaCursor = new Date(yy, mm-1, 1); }
+    renderView();
     toast('Agenda salva','ok');
   });
   if(item){
@@ -1525,14 +2148,14 @@ function openAgendaFormModal(id){
    ====================================================================== */
 const PEDIDO_TABS = [
   {id:'recentes', label:'Recentes'},
-  {id:'pendente', label:'Pendente'},
-  {id:'andamento', label:'Em andamento'},
-  {id:'pagamento', label:'Aguard. pagamento'},
-  {id:'pago50', label:'Pagou 50%'},
-  {id:'concluido', label:'Evento concluído'},
-  {id:'finalizado', label:'Finalizado'}
+  {id:'orcamento', label:'Em Orçamento'},
+  {id:'confirmado', label:'Confirmado'},
+  {id:'pagamento_pendente', label:'Pagamento Pendente'},
+  {id:'entregue', label:'Entregue'},
+  {id:'finalizado', label:'Finalizado'},
+  {id:'cancelado_pago', label:'Cancelado c/ pagamento'}
 ];
-const TIPOS_EVENTO = ['','Aniversário Infantil','Aniversário Adulto','Casamento','Noivado','Chá de Bebê / Revelação','Formatura','Corporativo','Outro'];
+const TIPOS_EVENTO = ['','Festa Infantil','Festa Adulta','Festa Juvenil','Casamento/Noivado','Chá de Fralda/Bebê','Chá Revelação','Corporativo/Reunião','Dia de Lazer','Outros'];
 /* Etiquetas (categorias) de despesa — cada uma com um emoji bem
    ilustrativo e uma cor própria, usadas na grade de seleção rápida ao
    lançar uma nova despesa e como identidade visual na listagem. */
@@ -1576,11 +2199,14 @@ function eventoResumo(p){
 /* Bloco de "Imagem de inspiração": a imagem que o cliente envia com a
    referência do evento (tema, decoração, cores etc.), anexada e salva
    junto com o pedido. */
-function renderEvImagemBlock(img){
+function renderEvImagemBlock(img, carregando){
+  if(carregando){
+    return '<div class="ev-img-loading"><span class="spin"></span> Otimizando e salvando a imagem…</div>';
+  }
   if(img){
     return ''+
       '<div class="ev-img-preview" id="pf-ev-imagem-preview" style="cursor:pointer">'+
-        '<img src="'+img+'" alt="Imagem de inspiração" style="width:100%;max-height:240px;object-fit:cover;border-radius:12px;border:1px solid var(--line);display:block">'+
+        '<img '+imgAttrs(img)+' alt="Imagem de inspiração" style="width:100%;max-height:240px;object-fit:cover;border-radius:12px;border:1px solid var(--line);display:block">'+
       '</div>'+
       '<div class="flex gap-8 mt-8">'+
         '<label class="btn btn-ghost btn-sm" style="cursor:pointer">'+ic('camera',16)+' Trocar imagem<input type="file" id="pf-ev-imagem-input" accept="image/*" style="display:none"></label>'+
@@ -1592,33 +2218,47 @@ function renderEvImagemBlock(img){
 /* Re-renderiza só o bloco da imagem (sem redesenhar o resto do form,
    preservando o que a pessoa já digitou nos outros campos) e liga os
    novos listeners (upload, remover, ampliar). */
-function refreshEvImagemBlock(){
+function refreshEvImagemBlock(carregando){
   const wrap = document.getElementById('pf-ev-imagem-wrap');
   if(!wrap) return;
   const d = window.__pedidoDraft;
-  wrap.innerHTML = renderEvImagemBlock(d.evento.imagemInspiracao);
-  bindEvImagem();
+  wrap.innerHTML = renderEvImagemBlock(d.evento.imagemInspiracao, carregando);
+  if(!carregando) bindEvImagem();
 }
+function msgErroImagem(err){
+  if(err && err.code==='nao-imagem') return 'Selecione um arquivo de imagem (JPG, PNG…)';
+  return 'Não foi possível ler essa imagem. Tente outra foto (JPG/PNG). No iPhone: Ajustes › Câmera › Formatos › "Mais Compatível".';
+}
+let evImagemProcessando = false;
 function bindEvImagem(){
   const input = document.getElementById('pf-ev-imagem-input');
   if(input){
-    input.addEventListener('change', e=>{
-      const file = e.target.files[0]; if(!file) return;
-      if(!file.type.startsWith('image/')){ toast('Selecione um arquivo de imagem','err'); return; }
-      const reader = new FileReader();
-      reader.onload = ()=>{
-        window.__pedidoDraft.evento.imagemInspiracao = reader.result;
-        refreshEvImagemBlock();
-        toast('Imagem de inspiração adicionada','ok');
-      };
-      reader.readAsDataURL(file);
+    input.addEventListener('change', async e=>{
+      const file = e.target.files && e.target.files[0];
+      e.target.value = '';
+      if(!file) return;
+      const draftAlvo = window.__pedidoDraft;
+      evImagemProcessando = true;
+      refreshEvImagemBlock(true);
+      try{
+        const ref = await imgDeArquivo(file);
+        if(window.__pedidoDraft!==draftAlvo) return; /* saiu do formulário no meio do processo */
+        draftAlvo.evento.imagemInspiracao = ref;
+        toast('Imagem adicionada. Toque em "Salvar Pedido" para confirmar.','ok');
+      }catch(err){
+        console.warn('imagem', err);
+        toast(msgErroImagem(err),'err');
+      }finally{
+        evImagemProcessando = false;
+        if(window.__pedidoDraft===draftAlvo) refreshEvImagemBlock(false);
+      }
     });
   }
   const rmBtn = document.getElementById('pf-ev-imagem-rm');
   if(rmBtn){
     rmBtn.addEventListener('click', async ()=>{
-      const ok = await confirmDialog('Remover a imagem de inspiração deste pedido?');
-      if(ok){ window.__pedidoDraft.evento.imagemInspiracao = ''; refreshEvImagemBlock(); toast('Imagem removida','ok'); }
+      const ok = await confirmDialog('Remover a imagem de inspiração deste pedido?','Remover');
+      if(ok){ window.__pedidoDraft.evento.imagemInspiracao = ''; refreshEvImagemBlock(); toast('Imagem removida. Toque em "Salvar Pedido" para confirmar.','ok'); }
     });
   }
   const preview = document.getElementById('pf-ev-imagem-preview');
@@ -1628,7 +2268,7 @@ function bindEvImagem(){
       if(!img) return;
       openModal({
         title:'Imagem de inspiração', center:true,
-        body:'<img src="'+img+'" alt="Imagem de inspiração" style="width:100%;border-radius:10px;display:block">'
+        body:'<img '+imgAttrs(img)+' alt="Imagem de inspiração" style="width:100%;border-radius:10px;display:block">'
       });
     });
   }
@@ -1645,7 +2285,7 @@ function viewPedidos(){
     '<div class="card"><div class="empty">'+ic('tag',44)+'<h4>Nenhum pedido aqui</h4><p>Crie um novo pedido para começar.</p></div></div>') +'</div>'+
   '<div class="fab"><button class="btn btn-primary" id="fab-pedido">'+ic('plus',18)+' Novo Pedido</button></div>';
 }
-function pedidoRow(p){
+function pedidoRow(p, extra){
   const cli = findCliente(p.clienteId);
   const total = pedidoTotal(p);
   const restante = pedidoRestante(p);
@@ -1660,9 +2300,11 @@ function pedidoRow(p){
       (resumo? '<div class="t2">🎈 '+escapeHtml(resumo)+'</div>' : '')+
       (p.evento && p.evento.endereco? ('<div class="evt-endereco"><span class="addr-text">'+ic('pin',12)+' '+escapeHtml(p.evento.endereco)+'</span>'+
         '<button type="button" class="maps-link" data-maps-addr="'+escapeHtml(p.evento.endereco)+'">'+ic('pin',12)+' Ver no mapa</button></div>') : '')+
+      refEventoHtml(p.evento && p.evento.referencia)+
+      (extra? '<div class="t2" style="color:var(--text-faint)">'+extra+'</div>' : '')+
       (restante>0.004? '<div class="t2" style="color:var(--danger);font-weight:700">Falta '+fmtMoney(restante)+'</div>' : '<div class="t2" style="color:var(--ok);font-weight:700">Valor Total Pago</div>')+
     '</div>'+
-    '<div class="end"><div class="price">'+fmtMoney(total)+'</div><span class="badge '+statusClass(p.status)+'" style="margin-top:4px">'+statusLabel(p.status)+'</span></div>'+
+    '<div class="end"><div class="price">'+fmtMoney(total)+'</div><span class="badge '+statusClass(p.status)+'" style="margin-top:4px">'+statusLabel(p.status)+'</span>'+waPedidoBtnHtml(p)+'</div>'+
   '</div>';
 }
 function bindPedidos(){
@@ -1679,9 +2321,9 @@ function viewPedidoForm(id){
   const draft = p? JSON.parse(JSON.stringify(p)) : {
     id:null, numero: DB.pedidoSeq /* prévia; número definitivo é reservado ao salvar */,
     data: todayISO(), horario:'', horarioModo:'unico', horarioFim:'', clienteId:null, produtos:[], servicos:[], terceirizados:[],
-    evento:{tema:'',nome:'',idade:'',tipo:'',tipoOutro:'',horario:'',endereco:'',imagemInspiracao:'',taxaEntrega:0},
+    evento:{tema:'',nome:'',idade:'',tipo:'',tipoOutro:'',horario:'',endereco:'',referencia:'',imagemInspiracao:'',taxaEntrega:0},
     entregaDevolucao:{ativo:false, entregaData:'', entregaHora:'', devolucaoData:'', devolucaoHora:''},
-    desconto:0, pagamentos:[], obs:'', garantia:'', status:'pendente'
+    desconto:0, pagamentos:[], obs:'', garantia:'', status:'orcamento'
   };
   /* compatibilidade com pedidos salvos antes destes recursos */
   draft.terceirizados = draft.terceirizados || [];
@@ -1689,7 +2331,8 @@ function viewPedidoForm(id){
   draft.horarioModo = draft.horarioModo || 'unico';
   draft.horarioFim = draft.horarioFim || '';
   draft.pagamentos = draft.pagamentos || [];
-  draft.evento = Object.assign({tema:'',nome:'',idade:'',tipo:'',tipoOutro:'',horario:'',endereco:'',imagemInspiracao:'',taxaEntrega:0}, draft.evento||{});
+  draft.evento = Object.assign({tema:'',nome:'',idade:'',tipo:'',tipoOutro:'',horario:'',endereco:'',referencia:'',imagemInspiracao:'',taxaEntrega:0}, draft.evento||{});
+  if(!STATUS_PEDIDO.includes(draft.status)) draft.status = MAPA_STATUS_ANTIGO[draft.status] || 'orcamento';
   draft.entregaDevolucao = Object.assign({ativo:false, entregaData:'', entregaHora:'', devolucaoData:'', devolucaoHora:''}, draft.entregaDevolucao||{});
   draft.produtos.forEach(i=>{ if(i.desconto==null) i.desconto = 0; });
   draft.servicos.forEach(i=>{ if(i.desconto==null) i.desconto = 0; });
@@ -1734,10 +2377,11 @@ function viewPedidoForm(id){
       '</div>'+
       '<div class="field"><label>Cliente</label><div class="input-with-actions">'+
         '<select id="pf-cliente">'+clientesOpts+'</select>'+
+        '<button type="button" class="round-action ra-whats" id="pf-whats-cliente" title="Abrir WhatsApp do cliente">'+ic('whats',20)+'</button>'+
         '<button type="button" class="round-action" style="background:var(--pink-dark)" id="pf-novo-cliente" title="Cadastrar novo cliente">'+ic('plus',20)+'</button>'+
       '</div></div>'+
       '<div class="field"><label>Status</label><select id="pf-status">'+
-        ['pendente','andamento','pagamento','pago50','concluido','finalizado','cancelado'].map(s=>'<option value="'+s+'"'+(draft.status===s?' selected':'')+'>'+statusLabel(s)+'</option>').join('')+
+        STATUS_PEDIDO.map(s=>'<option value="'+s+'"'+(draft.status===s?' selected':'')+'>'+statusLabel(s)+'</option>').join('')+
       '</select></div>'+
     '</div>'+
 
@@ -1752,9 +2396,10 @@ function viewPedidoForm(id){
       '<div class="field"><label>Tipo de Evento</label><select id="pf-ev-tipo">'+
         TIPOS_EVENTO.map(o=>'<option value="'+escapeHtml(o)+'"'+(draft.evento.tipo===o?' selected':'')+'>'+(o||'Selecione')+'</option>').join('')+
       '</select></div>'+
-      '<div class="field" id="pf-ev-tipo-outro-wrap" style="'+(draft.evento.tipo==='Outro'?'':'display:none')+'"><label>Especifique o tipo de evento</label><input type="text" id="pf-ev-tipo-outro" value="'+escapeHtml(draft.evento.tipoOutro)+'" placeholder="Digite o tipo de evento"></div>'+
+      '<div class="field" id="pf-ev-tipo-outro-wrap" style="'+(draft.evento.tipo==='Outros'?'':'display:none')+'"><label>Especifique o tipo de evento</label><input type="text" id="pf-ev-tipo-outro" value="'+escapeHtml(draft.evento.tipoOutro)+'" placeholder="Digite o tipo de evento"></div>'+
       '<div class="field"><label>Horário do Evento</label><input type="time" id="pf-ev-horario" value="'+escapeHtml(draft.evento.horario)+'"></div>'+
       '<div class="field"><label>Endereço do Evento</label><input type="text" id="pf-ev-endereco" value="'+escapeHtml(draft.evento.endereco)+'" placeholder="Rua, número, bairro, cidade"></div>'+
+      '<div class="field"><label>Ponto de Referência</label><input type="text" id="pf-ev-referencia" value="'+escapeHtml(draft.evento.referencia||'')+'" placeholder="Ex: Próximo à padaria, casa de muro azul, portão preto…"></div>'+
       '<div id="pf-taxa-entrega-wrap" class="mt-8"></div>'+
     '</div>'+
 
@@ -2179,6 +2824,13 @@ function bindPedidoForm(id){
       if(devolucaoData && !devolucaoData.value) devolucaoData.value = dataPedido;
     }
   });
+  document.getElementById('pf-whats-cliente').addEventListener('click', ()=>{
+    const cli = findCliente(document.getElementById('pf-cliente').value);
+    if(!cli){ toast('Selecione o cliente primeiro','err'); return; }
+    if(!onlyDigits(cli.telefone)){ toast('Este cliente não tem telefone cadastrado','err'); return; }
+    const p = id? DB.pedidos.find(x=>x.id===id) : null;
+    window.open(waLink(cli.telefone, p? msgWhatsPedido(p, cli) : saudacaoWhats(cli)), '_blank');
+  });
   document.getElementById('pf-novo-cliente').addEventListener('click', ()=>{
     openClienteFormModal(null, (novoCliente)=>{
       window.__pedidoDraft.clienteId = novoCliente.id;
@@ -2186,13 +2838,15 @@ function bindPedidoForm(id){
     });
   });
   document.getElementById('pf-ev-tipo').addEventListener('change', (e)=>{
-    document.getElementById('pf-ev-tipo-outro-wrap').style.display = e.target.value==='Outro' ? '' : 'none';
+    document.getElementById('pf-ev-tipo-outro-wrap').style.display = e.target.value==='Outros' ? '' : 'none';
   });
 
-  document.getElementById('pf-save').addEventListener('click', async ()=>{
+  onSafeClick(document.getElementById('pf-save'), async ()=>{
     const d = window.__pedidoDraft;
+    if(evImagemProcessando){ toast('Aguarde a imagem terminar de ser processada…','err'); return; }
     const clienteId = document.getElementById('pf-cliente').value;
     if(!clienteId){ toast('Selecione um cliente','err'); return; }
+    if(!document.getElementById('pf-data').value){ toast('Informe a data do pedido','err'); return; }
     if(d.produtos.length===0 && d.servicos.length===0 && d.terceirizados.length===0){ toast('Adicione ao menos um produto, serviço ou empresa terceirizada','err'); return; }
     d.data = document.getElementById('pf-data').value;
     const horarioModo = document.getElementById('pf-horario-modo-wrap').dataset.modo || 'unico';
@@ -2222,6 +2876,7 @@ function bindPedidoForm(id){
       tipoOutro: document.getElementById('pf-ev-tipo-outro').value.trim(),
       horario: document.getElementById('pf-ev-horario').value,
       endereco: document.getElementById('pf-ev-endereco').value.trim(),
+      referencia: document.getElementById('pf-ev-referencia').value.trim(),
       imagemInspiracao: d.evento.imagemInspiracao || '',
       taxaEntrega: Math.max(Number(d.evento.taxaEntrega)||0, 0)
     };
@@ -2231,10 +2886,16 @@ function bindPedidoForm(id){
     d.garantia = document.getElementById('pf-garantia').value.trim();
 
     const existing = id? DB.pedidos.find(x=>x.id===id) : null;
-    if(existing){ Object.assign(existing, d); }
-    else{ d.id = nextId(); d.numero = nextPedidoNumero(); DB.pedidos.push(d); }
-    syncPedidoAgenda(existing || d);
+    const imagemAntiga = existing && existing.evento ? existing.evento.imagemInspiracao : '';
+    const salvo = JSON.parse(JSON.stringify(d));
+    salvo.atualizadoEm = Date.now();
+    if(!existing) salvo.criadoEm = salvo.atualizadoEm;
+    if(existing){ Object.assign(existing, salvo); }
+    else{ salvo.id = nextId(); salvo.numero = nextPedidoNumero(); DB.pedidos.push(salvo); }
+    syncPedidoAgenda(existing || salvo);
     await dbSave();
+    imgEnfileirarEnvio(salvo.evento.imagemInspiracao);
+    if(imagemAntiga && imagemAntiga!==salvo.evento.imagemInspiracao){ window.__pedidoDraft = null; imgApagarSeOrfa(imagemAntiga); }
     toast('Pedido salvo e agendado na Agenda','ok');
     navigate('pedidos');
   });
@@ -2244,7 +2905,13 @@ function bindPedidoForm(id){
   const delBtn = document.getElementById('pf-del');
   if(delBtn) delBtn.addEventListener('click', async ()=>{
     const ok = await confirmDialog('Excluir este pedido definitivamente?');
-    if(ok){ DB.pedidos = DB.pedidos.filter(p=>p.id!==id); removePedidoAgenda(id); await dbSave(); toast('Pedido excluído','ok'); navigate('pedidos'); }
+    if(ok){
+      const alvo = DB.pedidos.find(p=>p.id===id);
+      const img = alvo && alvo.evento ? alvo.evento.imagemInspiracao : '';
+      DB.pedidos = DB.pedidos.filter(p=>p.id!==id); removePedidoAgenda(id); await dbSave();
+      window.__pedidoDraft = null; imgApagarSeOrfa(img);
+      toast('Pedido excluído','ok'); navigate('pedidos');
+    }
   });
 }
 function openPickerModal(group){
@@ -2415,26 +3082,92 @@ function refreshTerceirizadoEmpresaSelect(t, forceSelectId){
 /* ======================================================================
    CLIENTES
    ====================================================================== */
+const RECENTES_DIAS = 5;
+function letraInicial(nome){
+  const l = String(nome||'').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').charAt(0).toUpperCase();
+  return /[A-Z]/.test(l)? l : '#';
+}
+function filtroClienteBusca(c, q, qDig){
+  if(!q) return true;
+  return (c.nome||'').toLowerCase().includes(q) || (qDig && onlyDigits(c.telefone).includes(qDig)) || (c.email||'').toLowerCase().includes(q);
+}
+/* Pedidos feitos (ou atualizados) nos últimos 5 dias, mais novos primeiro. */
+function pedidosRecentes(){
+  const limite = Date.now() - RECENTES_DIAS*24*60*60*1000;
+  return DB.pedidos.filter(p=>{ const t = Number(p.criadoEm||p.atualizadoEm)||0; return t >= limite; })
+    .sort((a,b)=>(Number(b.criadoEm||b.atualizadoEm)||0)-(Number(a.criadoEm||a.atualizadoEm)||0));
+}
+function fmtQuando(ts){
+  const d = new Date(Number(ts));
+  const iso = isoFromDate(d);
+  const hora = String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  if(iso===todayISO()) return 'hoje às '+hora;
+  const ontem = isoFromDate(new Date(Date.now()-86400000));
+  if(iso===ontem) return 'ontem às '+hora;
+  return fmtDateBR(iso)+' às '+hora;
+}
+function clientesListaHtml(){
+  const q = (state.clienteSearch||'').toLowerCase().trim();
+  const qDig = onlyDigits(q);
+  if(state.clientesAba==='recentes'){
+    const lista = pedidosRecentes().filter(p=>{ const c = findCliente(p.clienteId); return !q || (c && filtroClienteBusca(c, q, qDig)); });
+    if(!lista.length){
+      return '<div class="card"><div class="empty">'+ic('tag',44)+'<h4>Nenhum pedido nos últimos '+RECENTES_DIAS+' dias</h4><p>'+(q?'Nenhum pedido recente para essa busca.':'Os pedidos feitos nos últimos '+RECENTES_DIAS+' dias aparecem aqui.')+'</p></div></div>';
+    }
+    return lista.map(p=>{
+      const t = p.criadoEm || p.atualizadoEm;
+      return pedidoRow(p, (p.criadoEm? 'Feito ' : 'Atualizado ')+fmtQuando(t));
+    }).join('');
+  }
+  const list = DB.clientes.filter(c=>filtroClienteBusca(c, q, qDig))
+    .slice().sort((a,b)=>(a.nome||'').trim().localeCompare((b.nome||'').trim(),'pt-BR',{sensitivity:'base'}));
+  if(!list.length){
+    return '<div class="card"><div class="empty">'+ic('users',44)+'<h4>Nenhum cliente encontrado</h4><p>'+(q?'Tente buscar de outro jeito.':'Cadastre o primeiro cliente do seu espaço.')+'</p></div></div>';
+  }
+  let html = '', letraAtual = null;
+  list.forEach(c=>{
+    const l = letraInicial(c.nome);
+    if(l!==letraAtual){ letraAtual = l; html += '<div class="letra-grupo">'+l+'</div>'; }
+    html += clienteRow(c);
+  });
+  return html;
+}
 function viewClientes(){
-  const q = state.clienteSearch.toLowerCase();
-  const list = DB.clientes.filter(c=> !q || c.nome.toLowerCase().includes(q) || (c.telefone||'').includes(q));
+  const aba = state.clientesAba==='recentes'? 'recentes' : 'todos';
+  const qtdRecentes = pedidosRecentes().length;
   return ''+
   '<div class="page-head"><div><h2>Clientes</h2><p class="sub">'+DB.clientes.length+' cliente(s) cadastrados</p></div></div>'+
-  '<div class="search-bar">'+ic('search',18)+'<input type="text" id="cli-search" placeholder="Buscar por nome ou telefone" value="'+escapeHtml(state.clienteSearch)+'"></div>'+
-  '<div>'+ (list.length? list.map(c=>clienteRow(c)).join('') :
-    '<div class="card"><div class="empty">'+ic('users',44)+'<h4>Nenhum cliente encontrado</h4><p>Cadastre o primeiro cliente do seu espaço.</p></div></div>')+'</div>'+
+  '<div class="tabs-scroll">'+
+    '<button class="chip'+(aba==='todos'?' active':'')+'" data-cliaba="todos">'+ic('users',14)+' Todos (A–Z)</button>'+
+    '<button class="chip'+(aba==='recentes'?' active':'')+'" data-cliaba="recentes">'+ic('tag',14)+' Recentes ('+RECENTES_DIAS+' dias)'+(qtdRecentes? '<span class="cnt">'+qtdRecentes+'</span>' : '')+'</button>'+
+  '</div>'+
+  '<div class="search-bar">'+ic('search',18)+'<input type="text" id="cli-search" placeholder="'+(aba==='recentes'?'Buscar pedido pelo nome ou telefone do cliente':'Buscar por nome ou telefone')+'" value="'+escapeHtml(state.clienteSearch)+'"></div>'+
+  '<div id="cli-list">'+clientesListaHtml()+'</div>'+
   '<div class="fab"><button class="btn btn-primary" id="fab-cliente">'+ic('plus',18)+' Cliente</button></div>';
 }
 function clienteRow(c){
+  const temTel = !!onlyDigits(c.telefone);
   return '<div class="list-item" data-cli-id="'+c.id+'">'+
     '<div class="ico">'+ic('users',18)+'</div>'+
     '<div class="body"><div class="t1">'+escapeHtml(c.nome)+'</div><div class="t2">'+escapeHtml(c.telefone||c.email||'Sem contato')+'</div></div>'+
+    (temTel? '<button type="button" class="wa-mini" style="margin-top:0" data-wa-cli="'+c.id+'" title="Abrir WhatsApp">'+ic('whats',14)+'</button>' : '')+
     '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg>'+
   '</div>';
 }
 function bindClientes(){
-  document.getElementById('cli-search').addEventListener('input', e=>{ state.clienteSearch = e.target.value; renderView(); document.getElementById('cli-search').focus(); });
-  document.querySelectorAll('[data-cli-id]').forEach(el=>el.addEventListener('click',()=>openClienteFormModal(el.dataset.cliId)));
+  const ligarItens = ()=>{
+    document.querySelectorAll('#cli-list [data-cli-id]').forEach(el=>el.addEventListener('click',()=>openClienteFormModal(el.dataset.cliId)));
+    document.querySelectorAll('#cli-list [data-pedido-id]').forEach(el=>el.addEventListener('click',()=>navigate('pedido-form',{id:el.dataset.pedidoId})));
+    document.querySelectorAll('#cli-list [data-wa-cli]').forEach(el=>el.addEventListener('click',e=>{
+      e.stopPropagation();
+      const c = findCliente(el.dataset.waCli);
+      if(c && onlyDigits(c.telefone)) window.open(waLink(c.telefone, saudacaoWhats(c)), '_blank');
+    }));
+    bindMapsLinks();
+  };
+  document.querySelectorAll('[data-cliaba]').forEach(el=>el.addEventListener('click',()=>{ state.clientesAba = el.dataset.cliaba; renderView(); }));
+  document.getElementById('cli-search').addEventListener('input', e=>{ state.clienteSearch = e.target.value; document.getElementById('cli-list').innerHTML = clientesListaHtml(); ligarItens(); });
+  ligarItens();
   document.getElementById('fab-cliente').addEventListener('click',()=>openClienteFormModal(null));
 }
 function openClienteFormModal(id, onSaved){
@@ -2461,7 +3194,7 @@ function openClienteFormModal(id, onSaved){
   ov.querySelector('#cl-whats-btn').addEventListener('click',()=>{ const t=document.getElementById('cl-tel').value; if(onlyDigits(t)) window.open(waLink(t,'Olá! Aqui é da Celia Decorações 🎈'),'_blank'); else toast('Informe um telefone','err'); });
   ov.querySelector('#cl-call-btn').addEventListener('click',()=>{ const t=document.getElementById('cl-tel').value; if(onlyDigits(t)) window.location.href=telLink(t); else toast('Informe um telefone','err'); });
   if(c) bindHistoricoPedidos(ov);
-  ov.querySelector('#cl-save').addEventListener('click', async ()=>{
+  onSafeClick(ov.querySelector('#cl-save'), async ()=>{
     const nome = document.getElementById('cl-nome').value.trim();
     if(!nome){ toast('Informe o nome do cliente','err'); return; }
     const telefone = document.getElementById('cl-tel').value.trim();
@@ -2485,7 +3218,7 @@ function openClienteFormModal(id, onSaved){
       }
     }
     const obj = { id: c?c.id:nextId(), nome, telefone, email:document.getElementById('cl-email').value.trim(), endereco:document.getElementById('cl-end').value.trim(), info:document.getElementById('cl-info').value.trim() };
-    if(c){ Object.assign(c,obj); } else { DB.clientes.push(obj); }
+    upsertPorId('clientes', obj);
     await dbSave();
     closeModal(ov);
     toast('Cliente salvo','ok');
@@ -2507,14 +3240,19 @@ function openClienteFormModal(id, onSaved){
    pedido, um seletor das empresas já cadastradas com atalho para cadastrar
    uma nova sem sair do fluxo.
    ====================================================================== */
+function empresasTercListaHtml(){
+  const q = (state.empresaTercSearch||'').toLowerCase().trim();
+  const qDig = onlyDigits(q);
+  const list = DB.empresasTerceirizadas.filter(e=> !q || (e.nome||'').toLowerCase().includes(q) || (qDig && onlyDigits(e.telefone).includes(qDig)) || (e.itens||'').toLowerCase().includes(q))
+    .slice().sort((a,b)=>(a.nome||'').localeCompare(b.nome||'','pt-BR',{sensitivity:'base'}));
+  return list.length? list.map(e=>empresaTercRow(e)).join('') :
+    '<div class="card"><div class="empty">'+ic('truck',44)+'<h4>Nenhuma empresa encontrada</h4><p>'+(q?'Tente buscar de outro jeito.':'Cadastre a primeira empresa terceirizada parceira do seu espaço.')+'</p></div></div>';
+}
 function viewEmpresasTerc(){
-  const q = (state.empresaTercSearch||'').toLowerCase();
-  const list = DB.empresasTerceirizadas.filter(e=> !q || e.nome.toLowerCase().includes(q) || (e.telefone||'').includes(q));
   return ''+
   '<div class="page-head"><div><h2>Empresas Terceirizadas</h2><p class="sub">'+DB.empresasTerceirizadas.length+' empresa(s) cadastrada(s)</p></div></div>'+
   '<div class="search-bar">'+ic('search',18)+'<input type="text" id="et-search" placeholder="Buscar por nome ou telefone" value="'+escapeHtml(state.empresaTercSearch||'')+'"></div>'+
-  '<div>'+ (list.length? list.map(e=>empresaTercRow(e)).join('') :
-    '<div class="card"><div class="empty">'+ic('truck',44)+'<h4>Nenhuma empresa cadastrada</h4><p>Cadastre a primeira empresa terceirizada parceira do seu espaço.</p></div></div>')+'</div>'+
+  '<div id="et-list">'+empresasTercListaHtml()+'</div>'+
   '<div class="fab"><button class="btn btn-primary" id="fab-empresa-terc">'+ic('plus',18)+' Empresa</button></div>';
 }
 function empresaTercRow(e){
@@ -2527,8 +3265,9 @@ function empresaTercRow(e){
   '</div>';
 }
 function bindEmpresasTerc(){
-  document.getElementById('et-search').addEventListener('input', e=>{ state.empresaTercSearch = e.target.value; renderView(); document.getElementById('et-search').focus(); });
-  document.querySelectorAll('[data-et-id]').forEach(el=>el.addEventListener('click',()=>openEmpresaTercFormModal(el.dataset.etId)));
+  const ligarItens = ()=>document.querySelectorAll('#et-list [data-et-id]').forEach(el=>el.addEventListener('click',()=>openEmpresaTercFormModal(el.dataset.etId)));
+  document.getElementById('et-search').addEventListener('input', e=>{ state.empresaTercSearch = e.target.value; document.getElementById('et-list').innerHTML = empresasTercListaHtml(); ligarItens(); });
+  ligarItens();
   document.getElementById('fab-empresa-terc').addEventListener('click',()=>openEmpresaTercFormModal(null));
 }
 function openEmpresaTercFormModal(id, onSaved){
@@ -2556,11 +3295,11 @@ function openEmpresaTercFormModal(id, onSaved){
   ov.querySelector('#et-whats-btn').addEventListener('click',()=>{ const t=document.getElementById('et-tel').value; if(onlyDigits(t)) window.open(waLink(t,'Olá! Aqui é da Celia Decorações 🎈'),'_blank'); else toast('Informe um telefone','err'); });
   ov.querySelector('#et-call-btn').addEventListener('click',()=>{ const t=document.getElementById('et-tel').value; if(onlyDigits(t)) window.location.href=telLink(t); else toast('Informe um telefone','err'); });
   if(e) bindHistoricoPedidos(ov);
-  ov.querySelector('#et-save').addEventListener('click', async ()=>{
+  onSafeClick(ov.querySelector('#et-save'), async ()=>{
     const nome = document.getElementById('et-nome').value.trim();
     if(!nome){ toast('Informe o nome da empresa','err'); return; }
     const obj = { id: e?e.id:nextId(), nome, telefone:document.getElementById('et-tel').value.trim(), email:document.getElementById('et-email').value.trim(), endereco:document.getElementById('et-end').value.trim(), itens:document.getElementById('et-itens').value.trim(), info:document.getElementById('et-info').value.trim() };
-    if(e){ Object.assign(e,obj); } else { DB.empresasTerceirizadas.push(obj); }
+    upsertPorId('empresasTerceirizadas', obj);
     await dbSave();
     closeModal(ov);
     toast('Empresa terceirizada salva','ok');
@@ -2593,7 +3332,7 @@ function viewCatalogo(){
 function produtoRow(p){
   return '<div class="list-item" data-prod-id="'+p.id+'">'+
     '<div class="ico">'+ic('box',18)+'</div>'+
-    '<div class="body"><div class="t1">'+escapeHtml(p.nome)+'</div><div class="t2">Estoque: '+p.estoque+' un.</div></div>'+
+    '<div class="body"><div class="t1">'+escapeHtml(p.nome)+'</div><div class="t2">Estoque: '+(Number(p.estoque)||0)+' un.</div></div>'+
     '<div class="end"><div class="price">'+fmtMoney(p.preco)+'</div><div class="t2">/'+escapeHtml(p.unidade||'un')+'</div></div>'+
   '</div>';
 }
@@ -2622,11 +3361,11 @@ function openProdutoModal(id){
     foot: (p? '<button class="btn btn-danger" id="pr-del">'+ic('trash',16)+'</button>':'') +
       '<button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-primary" id="pr-save">'+ic('check',16)+' Salvar</button>'
   });
-  ov.querySelector('#pr-save').addEventListener('click', async ()=>{
+  onSafeClick(ov.querySelector('#pr-save'), async ()=>{
     const nome = document.getElementById('pr-nome').value.trim();
     if(!nome){ toast('Informe o nome do produto','err'); return; }
     const obj = {id:p?p.id:nextId(), nome, preco:Number(document.getElementById('pr-preco').value)||0, unidade:document.getElementById('pr-unid').value, estoque:Number(document.getElementById('pr-estoque').value)||0};
-    if(p){Object.assign(p,obj);} else {DB.produtos.push(obj);}
+    upsertPorId('produtos', obj);
     await dbSave(); closeModal(ov); renderView(); toast('Produto salvo','ok');
   });
   if(p) ov.querySelector('#pr-del').addEventListener('click', async ()=>{
@@ -2645,11 +3384,11 @@ function openServicoModal(id){
     foot: (s? '<button class="btn btn-danger" id="sv-del">'+ic('trash',16)+'</button>':'') +
       '<button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-primary" id="sv-save">'+ic('check',16)+' Salvar</button>'
   });
-  ov.querySelector('#sv-save').addEventListener('click', async ()=>{
+  onSafeClick(ov.querySelector('#sv-save'), async ()=>{
     const nome = document.getElementById('sv-nome').value.trim();
     if(!nome){ toast('Informe o nome do serviço','err'); return; }
     const obj = {id:s?s.id:nextId(), nome, preco:Number(document.getElementById('sv-preco').value)||0, descricao:document.getElementById('sv-desc').value.trim()};
-    if(s){Object.assign(s,obj);} else {DB.servicos.push(obj);}
+    upsertPorId('servicos', obj);
     await dbSave(); closeModal(ov); renderView(); toast('Serviço salvo','ok');
   });
   if(s) ov.querySelector('#sv-del').addEventListener('click', async ()=>{
@@ -2689,7 +3428,9 @@ function finPeriodoLabel(periodo, range){
   const meses=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
   const f = d=> String(d.getDate()).padStart(2,'0')+' '+meses[d.getMonth()];
   const sameMonth = range.start.getMonth()===range.end.getMonth() && range.start.getFullYear()===range.end.getFullYear();
-  return f(range.start)+' – '+f(range.end)+(sameMonth?('/'+range.end.getFullYear()):('/'+range.end.getFullYear()));
+  const mesmoAno = range.start.getFullYear()===range.end.getFullYear();
+  void sameMonth;
+  return f(range.start)+(mesmoAno?'':('/'+range.start.getFullYear()))+' – '+f(range.end)+'/'+range.end.getFullYear();
 }
 /* Avança/recua a data de referência de acordo com o período ativo
    (7 dias na semana, quinzena a quinzena, mês a mês). */
@@ -2806,7 +3547,7 @@ function viewFinanceiro(){
   const startIso = isoFromDate(range.start), endIso = isoFromDate(range.end);
 
   const pedidosPeriodo = DB.pedidos.filter(p=>p.data && p.data>=startIso && p.data<=endIso);
-  const pedidosPeriodoAtivos = pedidosPeriodo.filter(p=>p.status!=='cancelado');
+  const pedidosPeriodoAtivos = pedidosPeriodo.filter(p=>!isStatusCancelado(p.status));
 
   const valorContratado = pedidosPeriodoAtivos.reduce((s,p)=>s+pedidoTotal(p),0);
   const aReceber = pedidosPeriodoAtivos.reduce((s,p)=>s+pedidoRestante(p),0);
@@ -2998,7 +3739,7 @@ function openNovaEtiquetaModal(onCreated){
     emojiEscolhido = btn.dataset.emojiPick;
     ov.querySelectorAll('[data-emoji-pick]').forEach(b=>b.classList.toggle('active', b===btn));
   }));
-  ov.querySelector('#ne-save').addEventListener('click', async ()=>{
+  onSafeClick(ov.querySelector('#ne-save'), async ()=>{
     const nome = document.getElementById('ne-nome').value.trim();
     if(!emojiEscolhido){ toast('Escolha um emoji para a etiqueta','err'); return; }
     if(!nome){ toast('Dê um nome para a etiqueta','err'); return; }
@@ -3051,13 +3792,13 @@ function openDespesaModal(id, presetTag){
     });
   }
   bindTagGrid();
-  ov.querySelector('#de-save').addEventListener('click', async ()=>{
+  onSafeClick(ov.querySelector('#de-save'), async ()=>{
     const descricao = document.getElementById('de-desc').value.trim();
     if(!descricao){ toast('Informe o nome da dívida','err'); return; }
     const vencimento = document.getElementById('de-vencimento').value || todayISO();
     const pago = document.getElementById('de-pago').value || '';
     const obj = {id:d?d.id:nextId(), tag:tagAtual, descricao, valor:Number(document.getElementById('de-valor').value)||0, vencimento, pago, data:vencimento};
-    if(d){Object.assign(d,obj);} else {DB.despesas.push(obj);}
+    upsertPorId('despesas', obj);
     await dbSave(); closeModal(ov); renderView(); toast('Despesa salva','ok');
   });
   if(d) ov.querySelector('#de-del').addEventListener('click', async ()=>{
@@ -3157,9 +3898,12 @@ function viewConfig(){
   '<div class="page-head"><div><h2>Configurações</h2><p class="sub">Dados do seu negócio</p></div></div>'+
   '<div class="card text-center">'+
     '<div style="width:84px;height:84px;margin:0 auto 12px;border-radius:50%;overflow:hidden;background:#f4f4f4;display:flex;align-items:center;justify-content:center">'+
-      (c.logo? '<img src="'+c.logo+'" style="width:100%;height:100%;object-fit:cover">' : '<div style="width:100%;height:100%">'+LOGO_SVG+'</div>')+
+      (c.logo? '<img '+imgAttrs(c.logo)+' alt="Logo" style="width:100%;height:100%;object-fit:cover">' : '<div style="width:100%;height:100%">'+LOGO_SVG+'</div>')+
     '</div>'+
-    '<label class="btn btn-ghost btn-sm" style="cursor:pointer">'+ic('camera',16)+' Alterar logo<input type="file" id="cfg-logo" accept="image/*" style="display:none"></label>'+
+    '<div class="flex gap-8" style="justify-content:center;flex-wrap:wrap">'+
+      '<label class="btn btn-ghost btn-sm" id="cfg-logo-label" style="cursor:pointer">'+ic('camera',16)+' Alterar logo<input type="file" id="cfg-logo" accept="image/*" style="display:none"></label>'+
+      (c.logo? '<button type="button" class="btn btn-danger btn-sm" id="cfg-logo-rm">'+ic('trash',16)+' Remover logo</button>' : '')+
+    '</div>'+
   '</div>'+
   '<div class="card mt-16">'+
     '<div class="field"><label>Nome do negócio</label><input type="text" id="cfg-nome" value="'+escapeHtml(c.nome)+'"></div>'+
@@ -3201,20 +3945,40 @@ function viewConfig(){
   '<p class="muted text-center mt-16" style="font-size:12px">Agenda Celia · Sistema de Gestão · v1.0</p>';
 }
 function bindConfig(){
-  document.getElementById('cfg-logo').addEventListener('change', e=>{
-    const file = e.target.files[0]; if(!file) return;
-    const reader = new FileReader();
-    reader.onload = async ()=>{ DB.config.logo = reader.result; await dbSave(); renderView(); toast('Logo atualizada','ok'); };
-    reader.readAsDataURL(file);
+  document.getElementById('cfg-logo').addEventListener('change', async e=>{
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if(!file) return;
+    const label = document.getElementById('cfg-logo-label');
+    if(label){ label.innerHTML = '<span class="spin"></span> Salvando…'; label.style.pointerEvents='none'; }
+    try{
+      const ref = await imgDeArquivo(file, {maxLado:512, alvo:200000, qualidade:0.9});
+      const antiga = DB.config.logo;
+      DB.config.logo = ref;
+      await dbSave();
+      imgEnfileirarEnvio(ref);
+      imgApagarSeOrfa(antiga);
+      toast('Logo atualizada','ok');
+    }catch(err){
+      console.warn('logo', err);
+      toast(msgErroImagem(err),'err');
+    }
+    renderView();
   });
-  document.getElementById('cfg-save').addEventListener('click', async ()=>{
+  const logoRm = document.getElementById('cfg-logo-rm');
+  if(logoRm) logoRm.addEventListener('click', async ()=>{
+    const ok = await confirmDialog('Remover a logo personalizada e voltar para a logo padrão?','Remover');
+    if(!ok) return;
+    const antiga = DB.config.logo; DB.config.logo = ''; await dbSave(); imgApagarSeOrfa(antiga); renderView(); toast('Logo removida','ok');
+  });
+  onSafeClick(document.getElementById('cfg-save'), async ()=>{
     DB.config.nome = document.getElementById('cfg-nome').value.trim() || 'Celia Decorações';
     DB.config.telefone = document.getElementById('cfg-tel').value.trim();
     DB.config.email = document.getElementById('cfg-email').value.trim();
     DB.config.endereco = document.getElementById('cfg-end').value.trim();
     await dbSave(); render(); toast('Configurações salvas','ok');
   });
-  document.getElementById('sync-save').addEventListener('click', async ()=>{
+  onSafeClick(document.getElementById('sync-save'), async ()=>{
     const cfg = {
       codigo: document.getElementById('sync-codigo').value.trim(),
       apiKey: document.getElementById('sync-apikey').value.trim(),
@@ -3230,7 +3994,8 @@ function bindConfig(){
     saveSyncConfigLocal(cfg);
     try{
       ensureFirestore(cfg);
-      await firebase.auth().signInWithEmailAndPassword(email, senha);
+      if(fsAuth().currentUser && fsAuth().currentUser.email!==email){ try{ await fsAuth().signOut(); }catch(_){} }
+      await comTimeout(fsAuth().signInWithEmailAndPassword(email, senha), 20000);
       saveSyncAuthLocal({email, senha});
     }catch(e){
       console.warn('sync login error', e);
@@ -3241,14 +4006,23 @@ function bindConfig(){
     }
     try{
       const ref = ensureFirestore(cfg);
-      const snap = await ref.get();
+      const snap = await comTimeout(ref.get(), 20000);
       if(snap.exists && snap.data() && snap.data().db){
         const usarNuvem = await confirmDialog('Encontramos dados salvos nesse código. Toque em "Usar dados da nuvem" para trazer esses dados para este aparelho, ou em "Cancelar" para manter os dados deste aparelho (eles substituirão os que já estavam salvos na nuvem).', 'Usar dados da nuvem');
-        if(usarNuvem){ DB = Object.assign(defaultDB(), snap.data().db); migrarPrecosPedidos(); await dbSave(); }
-        else{ await ref.set({ db: DB, atualizadoEm: Date.now() }); }
+        if(usarNuvem){
+          DB = Object.assign(defaultDB(), snap.data().db); migrarPrecosPedidos();
+          try{ localStorage.setItem(DB_KEY, JSON.stringify(DB)); localStorage.removeItem(CLOUD_PENDING_KEY); }catch(_){}
+        }
+        else{ await comTimeout(ref.set({ db: JSON.parse(JSON.stringify(DB)), atualizadoEm: Date.now() }), 20000); }
       }else{
-        await ref.set({ db: DB, atualizadoEm: Date.now() });
+        await comTimeout(ref.set({ db: JSON.parse(JSON.stringify(DB)), atualizadoEm: Date.now() }), 20000);
       }
+      try{ localStorage.removeItem(CLOUD_PENDING_KEY); }catch(_){}
+      syncStatus = 'on';
+      /* garante que as fotos deste aparelho também vão para a nuvem */
+      gravarFilaImagens(lerFilaImagens().concat(refsImagensNoBanco().map(imgRefId)));
+      processarFilaImagens();
+      migrarImagensInline();
       attachSyncListener();
       render();
       toast('Sincronização ativada neste aparelho','ok');
@@ -3266,18 +4040,43 @@ function bindConfig(){
       if(ok){ detachSyncListener(); clearSyncConfigLocal(); clearSyncAuthLocal(); toast('Sincronização desligada neste aparelho','ok'); render(); }
     });
   }
-  document.getElementById('cfg-export').addEventListener('click', ()=>{
-    const blob = new Blob([JSON.stringify(DB,null,2)], {type:'application/json'});
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'celia-decoracoes-backup.json'; a.click();
+  onSafeClick(document.getElementById('cfg-export'), async ()=>{
+    /* o backup leva junto as fotos (antes ficavam de fora) */
+    const copia = JSON.parse(JSON.stringify(DB));
+    const imagens = {};
+    let faltaram = 0;
+    for(const ref of refsImagensNoBanco()){
+      try{ imagens[imgRefId(ref)] = await imgResolver(ref); }catch(e){ faltaram++; }
+    }
+    if(Object.keys(imagens).length) copia.__imagens = imagens;
+    const blob = new Blob([JSON.stringify(copia)], {type:'application/json'});
+    downloadBlob(blob, 'celia-decoracoes-backup-'+todayISO()+'.json');
+    toast(faltaram? ('Backup exportado ('+faltaram+' imagem(ns) não disponível(is) neste aparelho)') : 'Backup exportado com sucesso', faltaram?'err':'ok');
   });
   document.getElementById('cfg-import').addEventListener('click', ()=>document.getElementById('cfg-import-file').click());
   document.getElementById('cfg-import-file').addEventListener('change', e=>{
     const file = e.target.files[0]; if(!file) return;
     const reader = new FileReader();
+    e.target.value = '';
     reader.onload = async ()=>{
-      try{ const data = JSON.parse(reader.result); DB = Object.assign(defaultDB(), data); migrarPrecosPedidos(); await dbSave(); render(); toast('Backup importado','ok'); }
-      catch(err){ toast('Arquivo inválido','err'); }
+      let data;
+      try{ data = JSON.parse(reader.result); }catch(err){ toast('Arquivo inválido','err'); return; }
+      if(!data || typeof data!=='object' || !Array.isArray(data.pedidos)){ toast('Este arquivo não é um backup do Agenda Celia','err'); return; }
+      const ok = await confirmDialog('Importar este backup vai SUBSTITUIR todos os dados atuais ('+data.pedidos.length+' pedido(s) no arquivo). Continuar?','Importar');
+      if(!ok) return;
+      const imagens = data.__imagens || {};
+      delete data.__imagens;
+      for(const id of Object.keys(imagens)){
+        if(typeof imagens[id]==='string' && imagens[id].indexOf('data:')===0){ imgMem.set(id, imagens[id]); await idbPutImg(id, imagens[id]); }
+      }
+      DB = Object.assign(defaultDB(), data); migrarPrecosPedidos();
+      await dbSave();
+      gravarFilaImagens(lerFilaImagens().concat(Object.keys(imagens)));
+      processarFilaImagens();
+      migrarImagensInline();
+      render(); toast('Backup importado','ok');
     };
+    reader.onerror = ()=>toast('Não foi possível ler o arquivo','err');
     reader.readAsText(file);
   });
   document.getElementById('cfg-reset').addEventListener('click', async ()=>{
@@ -3308,13 +4107,14 @@ function viewDocumento(id){
   const subtotal = itens.reduce((s,i)=>s+i.total,0) + descontoItensTotal;
   const total = pedidoTotal(p);
   const ev = p.evento || {};
-  const tipoLabel = ev.tipo==='Outro'? (ev.tipoOutro||'Outro') : ev.tipo;
+  const tipoLabel = ev.tipo==='Outros'? (ev.tipoOutro||'Outros') : ev.tipo;
   const evPartes = [];
   if(ev.tema) evPartes.push('Tema: '+ev.tema);
   if(ev.nome) evPartes.push((ev.idade? (ev.nome+' ('+ev.idade+' anos)') : ev.nome));
   if(tipoLabel) evPartes.push('Tipo: '+tipoLabel);
   if(ev.horario) evPartes.push('Horário do evento: '+ev.horario);
   const eventoLinha = evPartes.join(' · ');
+  const localLinha = [ev.endereco, ev.referencia? ('Ref.: '+ev.referencia) : ''].filter(Boolean).join(' · ');
   state.docModel = state.docModel || 'A';
 
   return ''+
@@ -3324,13 +4124,14 @@ function viewDocumento(id){
   '<div id="print-area">'+
   '<div class="receipt'+(state.docModel==='B'?' modelB':'')+'" id="receipt-el">'+
     '<div class="rhead">'+
-      '<div class="co"><div style="width:44px;height:44px;flex:0 0 auto">'+(cfg.logo?('<img src="'+cfg.logo+'" style="width:100%;height:100%;border-radius:50%;object-fit:cover">'):LOGO_SVG)+'</div>'+
+      '<div class="co"><div style="width:44px;height:44px;flex:0 0 auto">'+(cfg.logo?('<img '+imgAttrs(cfg.logo)+' alt="Logo" style="width:100%;height:100%;border-radius:50%;object-fit:cover">'):LOGO_SVG)+'</div>'+
         '<div><b style="font-family:var(--font-display);font-size:15px">'+escapeHtml(cfg.nome)+'</b><small>'+escapeHtml(cfg.endereco||'')+(cfg.telefone?(' · '+escapeHtml(cfg.telefone)):'')+'</small></div></div>'+
       '<div class="meta">Pedido nº<b>'+String(p.numero).padStart(5,'0')+'</b>Data<b>'+fmtDateBR(p.data)+(p.horario?(' às '+p.horario):'')+'</b></div>'+
     '</div>'+
     '<div class="rbody">'+
       '<div class="cliente"><b>'+escapeHtml(cli?cli.nome:'Cliente não definido')+'</b>'+escapeHtml(cli?(cli.telefone||cli.email||''):'')+'</div>'+
       (eventoLinha? '<div class="obs"><b>Evento:</b> '+escapeHtml(eventoLinha)+'</div>' : '')+
+      (localLinha? '<div class="obs"><b>Local:</b> '+escapeHtml(localLinha)+'</div>' : '')+
       (entregaDevolucaoAtiva(p)? '<div class="obs"><b>'+ic('truck',13)+' Entrega/Devolução:</b> '+escapeHtml(fmtEntregaDevolucao(p))+'</div>' : '')+
       '<table><thead><tr><th>Item</th><th>Valor Unit.</th><th>Qtd.</th><th>Total</th></tr></thead><tbody>'+
         itens.map(i=>'<tr><td>'+escapeHtml(i.nome)+
@@ -3368,24 +4169,42 @@ function bindDocumento(id){
   document.querySelector('[data-back-pedido]').addEventListener('click',()=>navigate('pedido-form',{id}));
   document.querySelectorAll('[data-model]').forEach(el=>el.addEventListener('click',()=>{ state.docModel = el.dataset.model; renderView(); }));
   document.getElementById('doc-print').addEventListener('click',()=>window.print());
-  document.getElementById('doc-share').addEventListener('click',()=>gerarPdfECompartilhar(id, true));
-  document.getElementById('doc-download').addEventListener('click',()=>gerarPdfECompartilhar(id, false));
+  onSafeClick(document.getElementById('doc-share'), ()=>gerarPdfECompartilhar(id, true));
+  onSafeClick(document.getElementById('doc-download'), ()=>gerarPdfECompartilhar(id, false));
 }
 async function gerarPdfECompartilhar(pedidoId, compartilhar){
   const p = DB.pedidos.find(x=>x.id===pedidoId);
+  if(!p){ toast('Pedido não encontrado','err'); return; }
   const cli = findCliente(p.clienteId);
   const el = document.getElementById('receipt-el');
+  if(!el) return;
   if(!window.html2canvas || !window.jspdf){ toast('Não foi possível carregar o gerador de PDF (verifique sua conexão)','err'); return; }
   toast('Gerando PDF...','ok');
   try{
-    const canvas = await html2canvas(el, {scale:2, backgroundColor:'#ffffff'});
-    const imgData = canvas.toDataURL('image/png');
+    await aguardarImagens(el);
+    if(document.fonts && document.fonts.ready){ try{ await document.fonts.ready; }catch(_){} }
+    const canvas = await html2canvas(el, {scale:2, backgroundColor:'#ffffff', useCORS:true, logging:false, windowWidth:Math.max(document.documentElement.clientWidth, 380)});
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({unit:'pt', format:'a4'});
     const pageW = pdf.internal.pageSize.getWidth();
-    const imgW = pageW - 60;
-    const imgH = canvas.height * (imgW/canvas.width);
-    pdf.addImage(imgData,'PNG',30,30,imgW,imgH);
+    const pageH = pdf.internal.pageSize.getHeight();
+    const margem = 30;
+    const imgW = pageW - margem*2;
+    const pxPorPt = canvas.width / imgW;
+    const alturaPaginaPx = Math.floor((pageH - margem*2) * pxPorPt);
+    /* divide recibos longos em várias páginas (antes o final era cortado) */
+    let y = 0, pagina = 0;
+    while(y < canvas.height){
+      const h = Math.min(alturaPaginaPx, canvas.height - y);
+      const fatia = document.createElement('canvas');
+      fatia.width = canvas.width; fatia.height = h;
+      const fx = fatia.getContext('2d');
+      fx.fillStyle = '#ffffff'; fx.fillRect(0,0,fatia.width,h);
+      fx.drawImage(canvas, 0, y, canvas.width, h, 0, 0, canvas.width, h);
+      if(pagina>0) pdf.addPage();
+      pdf.addImage(fatia.toDataURL('image/jpeg', 0.92), 'JPEG', margem, margem, imgW, h/pxPorPt);
+      y += h; pagina++;
+    }
     const filename = 'Pedido-'+String(p.numero).padStart(5,'0')+'-CeliaDecoracoes.pdf';
     const blob = pdf.output('blob');
 
@@ -3393,7 +4212,8 @@ async function gerarPdfECompartilhar(pedidoId, compartilhar){
       const texto = 'Olá'+(cli?(', '+cli.nome):'')+'! Segue o orçamento/recibo do seu evento com a Celia Decorações 🎈 Pedido #'+String(p.numero).padStart(5,'0')+' — Total: '+fmtMoney(pedidoTotal(p));
       const file = new File([blob], filename, {type:'application/pdf'});
       if(navigator.canShare && navigator.canShare({files:[file]})){
-        try{ await navigator.share({files:[file], title:filename, text:texto}); toast('PDF compartilhado!','ok'); return; }catch(e){ /* fall through to fallback */ }
+        try{ await navigator.share({files:[file], title:filename, text:texto}); toast('PDF compartilhado!','ok'); return; }
+        catch(e){ if(e && e.name==='AbortError') return; /* usuário cancelou */ }
       }
       // fallback: download + open whatsapp chat (with client's number if available)
       downloadBlob(blob, filename);
@@ -3410,7 +4230,9 @@ async function gerarPdfECompartilhar(pedidoId, compartilhar){
   }
 }
 function downloadBlob(blob, filename){
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 30000);
 }
 
 /* ======================================================================
@@ -3518,11 +4340,19 @@ function registerServiceWorker(){
    ====================================================================== */
 (async function boot(){
   registerServiceWorker();
-  const loaded = await dbLoad();
-  if(loaded){ DB = Object.assign(defaultDB(), loaded); }
+  const app = document.getElementById('app');
+  app.innerHTML = '<div class="splash"><div class="logo-big">'+LOGO_SVG+'</div><div class="boot-loading"><span class="spin"></span> Carregando seus dados…</div></div>';
+  let loaded = null;
+  try{ loaded = await dbLoad(); }catch(e){ console.warn('boot load', e); loaded = lerDbLocal(); }
+  if(loaded && typeof loaded==='object'){ DB = Object.assign(defaultDB(), loaded); }
+  ['clientes','produtos','servicos','pedidos','agenda','despesas','empresasTerceirizadas','despesaTagsCustom'].forEach(k=>{ if(!Array.isArray(DB[k])) DB[k] = []; });
+  DB.config = Object.assign(defaultDB().config, DB.config||{});
   if(migrarPrecosPedidos()){ await dbSave(); }
   render();
+  if(envioAposBoot){ try{ localStorage.setItem(CLOUD_PENDING_KEY,'1'); }catch(_){} agendarEnvioNuvem(); }
   attachSyncListener();
+  processarFilaImagens();
+  migrarImagensInline();
 })();
 
 })();
